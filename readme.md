@@ -20,3 +20,9 @@ packages:
   - "packages/*"
 ```
 
+.npmrc配置，下载的时候，依赖依然在各个包里，而不是提取到.pnpm
+
+```
+shamefully-hoist=true
+```
+
