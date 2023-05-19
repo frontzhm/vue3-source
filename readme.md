@@ -26,3 +26,30 @@ packages:
 shamefully-hoist=true
 ```
 
+## 各个包相互引用
+
+reactivity里建index.ts
+
+```ts
+export const isObject = (param) => {
+  return typeof param === 'object' && param !== null
+}
+```
+shared里建index.ts
+
+```ts
+import { isObject } from '@vue/reactivity'
+console.log(isObject({ a: 1 }))
+
+```
+
+## 引用其他包
+
+这里，`import { isObject } from '@vue/reactivity'`引用了其他包内容需要进行设置：
+
+1. 运行命令`tsc --init`，生成`tsconfig.json`
+1. 
+
+
+
+
