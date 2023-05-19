@@ -12,7 +12,7 @@
     "lib": ["ESNext", "DOM"], // 编译时需要引入的库
     "baseUrl": "./", // 用于解析非相对模块名称的基本目录
     "paths": {
-      "@vue/*": ["./packages/*"]
+      "@vue/*": ["./packages/*/src"]
     }, // 路径映射，将@vue/*映射到./packages/*
   }
 }
