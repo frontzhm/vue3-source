@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/", // 输出目录
+    "outDir": "dist", // 输出目录
     "sourceMap": true, // 生成sourceMap
     "module": "ESNext", // 模块格式
     "target": "ES2016", // 编译后的目标代码

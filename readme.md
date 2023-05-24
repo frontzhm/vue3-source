@@ -11,16 +11,16 @@ git init
 "private": true,
 ```
 
-加packages文件夹，里面加两个文件夹reactivity和shared,每个文件夹单独运行`pnpm init`，name加作用域，如`@vue/reactivity`、`@vue/shared`
+加 packages 文件夹，里面加两个文件夹 reactivity 和 shared,每个文件夹单独运行`pnpm init`，name 加作用域，如`@vue/reactivity`、`@vue/shared`
 
 配置，新建文件`pnpm-workspace.yaml`
 
 ```yaml
 packages:
-  - "packages/*"
+  - 'packages/*'
 ```
 
-.npmrc配置，下载的时候，依赖依然在各个包里，而不是提取到.pnpm
+.npmrc 配置，下载的时候，依赖依然在各个包里，而不是提取到.pnpm
 
 ```
 shamefully-hoist=true
@@ -28,19 +28,19 @@ shamefully-hoist=true
 
 ## 各个包相互引用
 
-reactivity里建src文件夹，建index.ts
+reactivity 里建 src 文件夹，建 index.ts
 
 ```ts
 export const isObject = (param) => {
-  return typeof param === 'object' && param !== null
-}
+  return typeof param === 'object' && param !== null;
+};
 ```
-shared里建src文件夹，建index.ts
+
+shared 里建 src 文件夹，建 index.ts
 
 ```ts
-import { isObject } from '@vue/reactivity'
-console.log(isObject({ a: 1 }))
-
+import { isObject } from '@vue/reactivity';
+console.log(isObject({ a: 1 }));
 ```
 
 ## 引用其他包
@@ -64,24 +64,58 @@ console.log(isObject({ a: 1 }))
     "lib": ["ESNext", "DOM"], // 编译时需要引入的库
     "baseUrl": "./", // 用于解析非相对模块名称的基本目录
     "paths": {
-      "@vue/*": ["./packages/src/*"]
-    }, // 路径映射，将@vue/*映射到./packages/*
+      "@vue/*": ["./packages/*/src"]
+    } // 路径映射，将@vue/*映射到./packages/*
   }
 }
 ```
-最重要的是，paths的映射。
+
+最重要的是，paths 的映射。
 
 ## 写打包脚本 - esbuild
 
-安装esbuild
+1. 安装 esbuild
 
 ```shell
 pnpm install esbuild -w -D
 ```
 
+2. 写脚本 - 建 scripts 文件夹，建 dev.mjs
 
+```js
+// const {build} = require('esbuild')
+import * as esbuild from 'esbuild'
 
+const target = 'shared'
 
+const ctx = await esbuild.context({
+  entryPoints:[`packages/${target}/src/index.ts`],
+  outfile: `dist/${target}.js`, // 出口文件
+  bundle: true, // 打包成一个文件
+  minify: false, // 不压缩
+  sourcemap: true, // 生成sourcemap
+  format: 'esm', // 输出格式
+  platform: 'browser', // 平台
+})
+
+await ctx.watch()
+console.log('watching...')
+
+```
+
+3. 写脚本命令 - package.json
+
+```json
+"scripts": {
+    "dev": "node scripts/dev.mjs"
+  },
+```
+
+4. 运行命令，生成dist
+
+```shell
+pnpm run dev
+```
 
 
 
