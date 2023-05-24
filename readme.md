@@ -34,6 +34,7 @@ reactivity 里建 src 文件夹，建 index.ts
 export const isObject = (param) => {
   return typeof param === 'object' && param !== null;
 };
+export function reactive(){}
 ```
 
 shared 里建 src 文件夹，建 index.ts
@@ -116,5 +117,69 @@ console.log('watching...');
 ```shell
 pnpm start
 ```
+
+## reactivity
+
+### 1. 先安装 vue3，作为目标对齐
+
+```shell
+pnpm i vue -w
+```
+
+### 2. 写个 index.html，感受 reactivity
+
+在 reactivity/dist 新建 index.html
+
+```html
+<body>
+  <script type="module">
+    import {
+      reactive,
+      effect,
+    } from '../../../node_modules/@vue/reactivity/dist/reactivity.esm-browser.prod.js';
+    const state = reactive({
+      count: 0,
+    });
+    // Proxy {count:0}
+    console.log(state);
+
+    setTimeout(() => {
+      state.count++;
+      // 1
+      console.log(state.count);
+    }, 1000);
+  </script>
+</body>
+```
+
+在项目根目录，运行`anywhere`，如果没有就`npm i anywhere -g`之后在运行，页面打开控制台就能看到相关数据了
+
+然后，换成我们自己的 reactivity 路径
+
+```js
+// import { reactive } from '../../../node_modules/@vue/reactivity/dist/reactivity.esm-browser.prod.js';
+import { reactive } from './reactivity.js';
+```
+
+### 改reactivity的目录结构
+
+将reactivity/src的index.ts作为导出接口，具体文件另起
+
+于是有2个文件：
+
+reactive.ts
+
+```ts
+export const isObject = (param) => {
+  return typeof param === 'object' && param !== null
+}
+export function reactive(){ }
+```
+index.ts
+
+```ts
+export * from './reactive'
+```
+
 
 

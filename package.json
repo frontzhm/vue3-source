@@ -13,5 +13,8 @@
   "license": "ISC",
   "devDependencies": {
     "esbuild": "^0.17.19"
+  },
+  "dependencies": {
+    "vue": "^3.3.4"
   }
 }
