@@ -34,7 +34,7 @@ reactivity 里建 src 文件夹，建 index.ts
 export const isObject = (param) => {
   return typeof param === 'object' && param !== null;
 };
-export function reactive(){}
+export function reactive() {}
 ```
 
 shared 里建 src 文件夹，建 index.ts
@@ -161,38 +161,74 @@ pnpm i vue -w
 import { reactive } from './reactivity.js';
 ```
 
-### 改reactivity的目录结构
+### 改 reactivity 的目录结构
 
-将reactivity/src的index.ts作为导出接口，具体文件另起
+将 reactivity/src 的 index.ts 作为导出接口，具体文件另起
 
-于是有2个文件：
+于是有 2 个文件：
 
 reactive.ts
 
 ```ts
 export const isObject = (param) => {
-  return typeof param === 'object' && param !== null
-}
-export function reactive(){ }
+  return typeof param === 'object' && param !== null;
+};
+export function reactive() {}
 ```
+
 index.ts
 
 ```ts
-export * from './reactive'
+export * from './reactive';
 ```
 
-### 分析reactive
+### 分析 reactive
 
-1. reactive肯定是个函数
+1. reactive 肯定是个函数
 1. 输入：输入是一个对象，不是对象，直接返回
-1. 输出：输出是一个Proxy实例
+1. 输出：输出是一个 Proxy 实例
 
-还有3个要点，也是难点：
-- 当对象有依赖属性的时候，将this的指向修改（后面细说）
+还有 3 个要点，也是难点：
+
+- 当对象有依赖属性的时候，将 this 的指向修改（后面细说）
 - 对象被代理过之后，再代理同一个对象的话，直接返回上一次代理
 - 对象被代理后的代理实例，如果再次被代理，仍然直接返回上一次代理
 
+### 寻常返回 proxy 对象
 
+先说下，所谓代理，就是**代为处理**。proxy 的基础不再赘述，简言之，访问对象，本质访问其代理。
 
+先解决这些：
+
+1. reactive 肯定是个函数
+1. 输入：输入是一个对象，不是对象，直接返回
+1. 输出：输出是一个 Proxy 实例
+
+```ts
+export const isObject = (param) => {
+  return typeof param === 'object' && param !== null;
+};
+export function reactive(target) {
+  // 如果不是对象，直接返回
+  if (!isObject(target)) {
+    return;
+  }
+  const proxy = new Proxy(target, {
+    get(target, key, receiver) {
+      console.log('get', key);
+      return target[key];
+    },
+    set(target, key, value, receiver) {
+      console.log('set', key, value);
+      target[key] = value;
+      return true;
+    },
+  });
+  return proxy;
+}
+```
+
+发现生效了！这算是最最基础版了！
+接下来，解决难点，进阶版来了
 
 
