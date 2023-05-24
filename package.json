@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "start": "pnpm run dev",
+    "start": "pnpm run dev"
   },
   "keywords": [],
   "author": "",
