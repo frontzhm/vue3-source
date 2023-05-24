@@ -84,38 +84,37 @@ pnpm install esbuild -w -D
 
 ```js
 // const {build} = require('esbuild')
-import * as esbuild from 'esbuild'
+import * as esbuild from 'esbuild';
 
-const target = 'shared'
+const target = 'reactivity';
 
 const ctx = await esbuild.context({
-  entryPoints:[`packages/${target}/src/index.ts`],
-  outfile: `dist/${target}.js`, // 出口文件
+  entryPoints: [`packages/${target}/src/index.ts`],
+  outfile: `packages/${target}/dist/${target}.js`, // 出口文件
   bundle: true, // 打包成一个文件
   minify: false, // 不压缩
   sourcemap: true, // 生成sourcemap
   format: 'esm', // 输出格式
   platform: 'browser', // 平台
-})
+});
 
-await ctx.watch()
-console.log('watching...')
-
+await ctx.watch();
+console.log('watching...');
 ```
 
 3. 写脚本命令 - package.json
 
 ```json
-"scripts": {
-    "dev": "node scripts/dev.mjs"
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "pnpm run dev"
   },
 ```
 
-4. 运行命令，生成dist
+4. 运行命令，生成 dist
 
 ```shell
-pnpm run dev
+pnpm start
 ```
-
 
 
