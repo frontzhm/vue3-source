@@ -353,10 +353,96 @@ export function reactive(target) {
 }
 ```
 
+`index.html`刷新下，`true`了
+
 ## 代理，对象被代理后的代理实例，直接返回代理
 
 举个例子：
 
-```js
+还是`index.html`
 
+```js
+import { reactive } from './reactivity.js';
+const obj = {
+  count: 0,
+};
+const state = reactive(obj);
+// 就这里，reactive改成state了
+const state2 = reactive(state);
+console.log(state === state2);
 ```
+
+就是对象被代理后的代理实例，再次被代理，现在肯定是`false`。
+
+那怎么返回第一次代理的值呢！
+
+嗯，其实就是做个标记
+
+```ts
+  // ...
+  // 如果已经代理过了，__v_isReactive肯定是true，那直接返回
+  if (target.__v_isReactive) {
+    return target
+  }
+  const proxy = new Proxy(target, {
+    get(target, key, receiver) {
+      console.log('读取key', key);
+      // 这里埋点，加上__v_isReactive属性，标识已经代理过了
+      if (key === '__v_isReactive') {
+        return true
+      }
+      // ...
+      }
+  })
+```
+
+一旦被代理过，就一定被埋点，那就标识了。
+
+`index.html`刷新下，`true`了
+
+## 附上完整版`reactive.ts`
+
+```ts
+export const isObject = (param) => {
+  return typeof param === 'object' && param !== null
+}
+
+// 代理对象的映射
+const reactiveMap = new WeakMap()
+
+export function reactive(target) {
+  // 如果不是对象，直接返回
+  if (!isObject(target)) {
+    return
+  }
+
+  // 如果已经代理过了，直接返回
+  if (reactiveMap.has(target)) {
+    return reactiveMap.get(target)
+  }
+
+  // 如果已经代理过了，__v_isReactive肯定是true，那直接返回
+  if (target.__v_isReactive) {
+    return target
+  }
+  const proxy = new Proxy(target, {
+    get(target, key, receiver) {
+      console.log('读取key', key);
+      // 这里埋点，加上__v_isReactive属性，标识已经代理过了
+      if (key === '__v_isReactive') {
+        return true
+      }
+      // Reflect将target的get方法里的this指向proxy上，也就是receiver
+      return Reflect.get(target, key, receiver);
+    },
+    set(target, key, value, receiver) {
+      Reflect.set(target, key, value, receiver);
+      return true;
+    },
+  })
+  // 如果没有代理过，缓存映射
+  reactiveMap.set(target, proxy)
+  return proxy
+}
+```
+
