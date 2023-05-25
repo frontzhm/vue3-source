@@ -231,4 +231,77 @@ export function reactive(target) {
 发现生效了！这算是最最基础版了！
 接下来，解决难点，进阶版来了
 
+## 解决 get 有依赖属性的问题 - Reflect
 
+举个例子说明，建 test-proxy.js:
+
+```js
+let person = {
+  name: 'hua',
+  get aliasName() {
+    console.log(this);
+    return `alias-${this.name}`;
+  },
+};
+let proxy = new Proxy(person, {
+  get(target, key, receiver) {
+    console.log('读取key', key);
+    return Reflect.get(target, key, receiver);
+  },
+  set(target, key, value) {
+    target[key] = value;
+    return true;
+  },
+});
+
+proxy.aliasName;
+```
+
+先不运行，猜，`读取key`输出几次。
+其实是一次，`aliasName`。
+
+流程如下:
+`proxy.aliasName`
+=> `proxy的get方法，打印，target这里指person`  
+=> `person.aliasName`是 get 属性，其`this.name`的`this`指向的是`person`，也就 `alias-${person.name}`  
+=> 这里注意，并没有走`proxy.name`
+
+这就是**BUG**。
+
+解决方案的关键就是在`this`的指向，所以这里启动`Reflect`，将`this`的指向`proxy`。同理，`set`也一样。
+
+```js
+let proxy = new Proxy(person, {
+  get(target, key, receiver) {
+    console.log('读取key', key);
+    return Reflect.get(target, key, receiver);
+  },
+  set(target, key, value, receiver) {
+    Reflect.set(target, key, value, receiver);
+    return true;
+  },
+});
+```
+
+新流程如下:
+`proxy.aliasName`
+=> `proxy的get方法，打印，target这里指person`  
+=> `person.aliasName`是 get 属性，此时`this.name`的`this`指向的是`proxy`，会再走一次 `proxy的get方法`
+
+这里可以将代码粘贴到浏览器执行，看下`this`在两种情况的下输出情况，第一次就是`person`，第二次是`proxy`。注意，编辑器里直接执行，并不能感知到`proxy`
+
+将`reactive.ts`进行第一个优化：
+
+```ts
+// ...
+const proxy = new Proxy(target, {
+  get(target, key, receiver) {
+    console.log('读取key', key);
+    return Reflect.get(target, key, receiver);
+  },
+  set(target, key, value, receiver) {
+    Reflect.set(target, key, value, receiver);
+    return true;
+  },
+});
+```

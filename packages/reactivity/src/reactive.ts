@@ -8,14 +8,13 @@ export function reactive(target) {
   }
   const proxy = new Proxy(target, {
     get(target, key, receiver) {
-      console.log('get', key)
-      return target[key]
+      console.log('读取key', key);
+      return Reflect.get(target, key, receiver);
     },
     set(target, key, value, receiver) {
-      console.log('set', key, value)
-      target[key] = value
-      return true
-    }
+      Reflect.set(target, key, value, receiver);
+      return true;
+    },
   })
   return proxy
 }
