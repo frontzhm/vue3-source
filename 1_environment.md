@@ -6,6 +6,9 @@ theme: vue-pro
 highlight:
 ---
 
+[github](https://github.com/frontzhm/vue3-source)同步进行了项目，方便的话，可以直接clone下来，切到`env`分支即可。
+
+
 运行以下命令，建项目目录
 
 ```shell
@@ -124,3 +127,4 @@ pnpm start
 ```
 
 好了，搭建环境成功了！
+
