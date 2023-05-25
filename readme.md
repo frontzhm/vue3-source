@@ -190,9 +190,9 @@ export * from './reactive';
 
 还有 3 个要点，也是难点：
 
-- 当对象有依赖属性的时候，将 this 的指向修改（后面细说）
-- 对象被代理过之后，再代理同一个对象的话，直接返回上一次代理
-- 对象被代理后的代理实例，如果再次被代理，仍然直接返回上一次代理
+- 解决对象的`get`有依赖属性的问题，需要将 this 的指向修改（后面细说）
+- 对象被代理过之后，再代理同一个对象的话，需要直接返回上一次代理
+- 对象被代理后的代理实例，如果再次被代理，需要仍然直接返回上一次代理
 
 ### 寻常返回 proxy 对象
 
@@ -304,4 +304,59 @@ const proxy = new Proxy(target, {
     return true;
   },
 });
+```
+
+## 对象第二次代理的话，直接返回第一次代理 - WeakMap
+
+举个例子：
+
+在`index.html`里输入以下
+
+```js
+import { reactive } from './reactivity.js';
+const obj = {
+  count: 0,
+};
+const state = reactive(obj);
+const state2 = reactive(obj);
+console.log(state === state2);
+```
+
+显然是 false，因为会做两次代理。
+
+那怎么让第二次的代理，直接返回第一次代理呢？
+
+你们可能想到了，存下呗（缓存）！
+
+设置一个映射，代理的时候，若对象在映射表，直接返回，不在就继续，且加到映射里。
+
+这里有个细节，普通对象，键不能是对象，这里非常适合用[`WeakMap`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/WeakMap)
+
+![weakmap](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/weakmap.png)
+
+将`reactive.ts`进行第二个优化：
+
+```ts
+// 代理对象的映射
+const reactiveMap = new WeakMap();
+
+export function reactive(target) {
+  // ...
+  // 如果已经代理过了，直接返回
+  if (reactiveMap.has(target)) {
+    return reactiveMap.get(target);
+  }
+  // const proxy ....
+  // 如果没有代理过，缓存映射
+  reactiveMap.set(target, proxy);
+  return proxy;
+}
+```
+
+## 代理，对象被代理后的代理实例，直接返回代理
+
+举个例子：
+
+```js
+
 ```
