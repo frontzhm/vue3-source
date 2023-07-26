@@ -1,3 +1,5 @@
+// import { isObject } from './shared'
+import { trigger } from './effect';
 export const isObject = (param) => {
   return typeof param === 'object' && param !== null
 }
@@ -31,8 +33,13 @@ export function reactive(target) {
       return Reflect.get(target, key, receiver);
     },
     set(target, key, value, receiver) {
-      Reflect.set(target, key, value, receiver);
-      return true;
+      const oldValue = target[key]
+      const r = Reflect.set(target, key, value, receiver);
+      // 响应式对象发生变化的时候，触发依赖
+      if(oldValue !== value) {
+        trigger(target, key, value, oldValue)
+      }
+      return r;
     },
   })
   // 如果没有代理过，缓存映射

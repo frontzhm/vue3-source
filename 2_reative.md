@@ -131,9 +131,9 @@ let person = {
   },
 };
 let proxy = new Proxy(person, {
-  get(target, key, receiver) {
+  get(target, key) {
     console.log('读取key', key);
-    return Reflect.get(target, key, receiver);
+    return target[key];
   },
   set(target, key, value) {
     target[key] = value;
