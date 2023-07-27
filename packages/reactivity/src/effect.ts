@@ -31,7 +31,7 @@ export function effect(fn) {
 // 本质是找到属性对应的effect，但属性存在于对象里，所以两层映射
 // 响应性对象 和 effect的映射，对象属性和effect的映射
 // targetMap = { obj:{name:[effect],age:[effect]} }
-const targetMap = new WeakMap();
+const targetMap:WeakMap<object,Map<string,Set<ReactiveEffect>>> = new WeakMap();
 
 // 让属性 订阅 和自己相关的effect，建立映射关系
 export function track(target, key) {
@@ -67,6 +67,6 @@ export function trigger(target, key) {
   }
   // 核心代码  属性相应的effect 挨个执行（上面一坨也是一样，判断）
   dep.forEach((effect) => {
-    effect.run();
+    activeEffect !== effect && effect.run();
   });
 }

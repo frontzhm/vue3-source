@@ -58,9 +58,9 @@ effect hua hua 6
 - effect 执行，参数 fn 执行
 - effect 里相应的属性发生变化，参数 fn 再次执行
 
-## effect 的创建
 
-### effect 函数首次执行
+
+## effect 函数首次执行
 
 ```ts
 export function effect(fn) {
@@ -68,7 +68,7 @@ export function effect(fn) {
 }
 ```
 
-### effect 里相应的属性发生变化，参数 fn 再次执行
+## effect 里相应的属性发生变化，参数 fn 再次执行
 
 变化 => 执行，典型的观察者模式，需要建立属性和 effect 的订阅和触发关系。
 
@@ -76,13 +76,13 @@ export function effect(fn) {
 
 首次执行函数的时候，会读到属性（get），将这些属性和 effect 对应起来。
 
-然后变化执行。
+然后变化，执行。
 属性发生改变（set），对应的 effect 执行。
 
 ```js
 // track的时候，需要拿到effect，所以用下全局变量存放effect
 let activeEffect = null;
-// 建立类，方便存放fn，和运行
+// 建立类，除了存放fn，方便处理其他逻辑
 class ReactiveEffect {
   private fn
   constructor(fn) {
@@ -176,7 +176,7 @@ const proxy = new Proxy(target, {
 
 整个逻辑就是，effect 首次执行的时候，触发 get，然后建立属性和 effect 的映射关系，属性值变化的时候，触发 set，然后寻找到映射的 effect，让其再执行。
 
-## effect 嵌套处理
+## effect 嵌套关系处理
 
 将 index.html 里，加上嵌套 effect
 
@@ -207,3 +207,168 @@ run() {
 }
 ```
 
+## effect 死循环处理
+
+如果相关的属性在内部发生变化，就会引起 effect 死循环了！
+
+```js
+effect(() => {
+  state.age++;
+  console.log('effect', state.age);
+});
+```
+
+解决方式就是，属性值发生变化，触发相应的 effect，但是如果正好当前执行的 effect 就是马上要执行的 effect，那么不执行就好
+
+```js
+dep.forEach((effect) => {
+  activeEffect !== effect && effect.run();
+});
+```
+
+刷新下浏览器，发现就不死循环啦！
+
+## 完整版的简单版 effect 文件和 reactivity 文件
+
+effect 文件：
+
+```ts
+// track的时候，需要拿到effect，所以用下全局变量存放effect
+let activeEffect = null;
+// 建立类，方便存放fn，和运行
+class ReactiveEffect {
+  private fn;
+  private parent;
+  constructor(fn) {
+    this.fn = fn;
+  }
+  run() {
+    // 通常是嵌套的effect，所以需要保存父级effect
+    // 如果没有嵌套关系，那么这里的activeEffect肯定是null
+    // 有的话，说明上一个effect没执行完，所以这里有上一个effect的引用
+    this.parent = activeEffect;
+    // 重新将新的effect赋值给全局变量
+    activeEffect = this;
+    // 执行
+    this.fn();
+    // 执行完之后，将全局变量恢复成上一个effect，没有的话就是null
+    activeEffect = this.parent;
+    // 如果有父级的话 将父级effect置空
+    this.parent && (this.parent = null);
+  }
+}
+
+export function effect(fn) {
+  const _effect = new ReactiveEffect(fn);
+  _effect.run();
+}
+
+// 本质是找到属性对应的effect，但属性存在于对象里，所以两层映射
+// 响应性对象 和 effect的映射，对象属性和effect的映射
+// targetMap = { obj:{name:[effect],age:[effect]} }
+const targetMap: WeakMap<
+  object,
+  Map<string, Set<ReactiveEffect>>
+> = new WeakMap();
+
+// 让属性 订阅 和自己相关的effect，建立映射关系
+export function track(target, key) {
+  if (!activeEffect) {
+    return;
+  }
+  let depsMap = targetMap.get(target);
+  if (!depsMap) {
+    targetMap.set(target, (depsMap = new Map()));
+  }
+  let dep = depsMap.get(key);
+  if (!dep) {
+    depsMap.set(key, (dep = new Set()));
+  }
+  // 这属性track过了
+  if (dep.has(activeEffect)) {
+    return;
+  }
+  // 核心代码，属性 订阅 effect （本质就是建立映射关系），上面一坨就是判断加初始化
+  dep.add(activeEffect);
+}
+
+// 属性值变化的时候，让相应的effect执行
+export function trigger(target, key) {
+  console.log('targetMap', targetMap);
+  const depsMap = targetMap.get(target);
+  if (!depsMap) {
+    return;
+  }
+  const dep = depsMap.get(key);
+  if (!dep) {
+    return;
+  }
+  // 核心代码  属性相应的effect 挨个执行（上面一坨也是一样，判断）
+  dep.forEach((effect) => {
+    activeEffect !== effect && effect.run();
+  });
+}
+```
+
+reactivity 文件：
+
+```ts
+// import { isObject } from './shared'
+import { track, trigger } from './effect';
+export const isObject = (param) => {
+  return typeof param === 'object' && param !== null;
+};
+
+// 代理对象的映射
+const reactiveMap = new WeakMap();
+
+export function reactive(target) {
+  // 如果不是对象，直接返回
+  if (!isObject(target)) {
+    return;
+  }
+
+  // 如果已经代理过了，直接返回
+  if (reactiveMap.has(target)) {
+    return reactiveMap.get(target);
+  }
+
+  // 如果已经代理过了，__v_isReactive肯定是true，那直接返回
+  if (target.__v_isReactive) {
+    return target;
+  }
+  const proxy = new Proxy(target, {
+    get(target, key, receiver) {
+      console.log('读取key', key);
+      // 这里埋点，加上__v_isReactive属性，标识已经代理过了
+      if (key === '__v_isReactive') {
+        return true;
+      }
+      // Reflect将target的get方法里的this指向proxy上，也就是receiver
+      const res = Reflect.get(target, key, receiver);
+      // 依赖收集
+      track(target, key);
+      return res;
+    },
+    set(target, key, value, receiver) {
+      const oldValue = target[key];
+      const r = Reflect.set(target, key, value, receiver);
+      // 响应式对象发生变化的时候，触发effect执行
+      if (oldValue !== value) {
+        trigger(target, key);
+      }
+      return r;
+    },
+  });
+  // 如果没有代理过，缓存映射
+  reactiveMap.set(target, proxy);
+  return proxy;
+}
+```
+
+index 文件
+
+```ts
+export * from './reactive';
+export * from './effect';
+```
