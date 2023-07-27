@@ -174,7 +174,36 @@ const proxy = new Proxy(target, {
 换成自己的试试，`import { reactive } from './reactivity.js';`
 ![effect_1](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/effect_1.png)
 
-整个逻辑就是，effect首次执行的时候，触发get，然后建立属性和effect的映射关系，属性值变化的时候，触发set，然后寻找到映射的effect，让其再执行。
+整个逻辑就是，effect 首次执行的时候，触发 get，然后建立属性和 effect 的映射关系，属性值变化的时候，触发 set，然后寻找到映射的 effect，让其再执行。
 
-## effect嵌套处理
+## effect 嵌套处理
+
+将 index.html 里，加上嵌套 effect
+
+```js
+effect(() => {
+  console.log('effect', state.age);
+  effect(() => {
+    console.log('effect2', state.name);
+  });
+});
+```
+
+其实嵌套 effect，表示关系主要是通过 parent 属性
+
+```js
+run() {
+    // 如果没有嵌套关系，那么这里的activeEffect肯定是null
+    // 有的话，说明上一个effect没执行完，所以这里有上一个effect的引用
+    this.parent = activeEffect
+    // 重新将新的effect赋值给全局变量
+    activeEffect = this;
+    // 执行
+    this.fn();
+    // 执行完之后，将全局变量恢复成上一个effect，没有的话就是null
+    activeEffect = this.parent
+    // 如果有父级的话 将父级effect置空
+    this.parent && (this.parent = null);
+}
+```
 

@@ -3,16 +3,23 @@ let activeEffect = null;
 // 建立类，方便存放fn，和运行
 class ReactiveEffect {
   private fn
+  private parent
   constructor(fn) {
     this.fn = fn;
   }
   run() {
-    // 运行的时候，当前的effect赋值给全局，让track的时候，方便属性订阅
+    // 通常是嵌套的effect，所以需要保存父级effect
+    // 如果没有嵌套关系，那么这里的activeEffect肯定是null
+    // 有的话，说明上一个effect没执行完，所以这里有上一个effect的引用
+    this.parent = activeEffect
+    // 重新将新的effect赋值给全局变量
     activeEffect = this;
-    console.log('activeEffect', activeEffect)
+    // 执行
     this.fn();
-    // 运行完，释放
-    activeEffect = null;
+    // 执行完之后，将全局变量恢复成上一个effect，没有的话就是null
+    activeEffect = this.parent
+    // 如果有父级的话 将父级effect置空
+    this.parent && (this.parent = null);
   }
 }
 
