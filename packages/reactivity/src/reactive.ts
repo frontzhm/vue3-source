@@ -1,5 +1,5 @@
 // import { isObject } from './shared'
-import { trigger } from './effect';
+import { track, trigger } from './effect';
 export const isObject = (param) => {
   return typeof param === 'object' && param !== null
 }
@@ -30,12 +30,15 @@ export function reactive(target) {
         return true
       }
       // Reflect将target的get方法里的this指向proxy上，也就是receiver
-      return Reflect.get(target, key, receiver);
+      const res = Reflect.get(target, key, receiver);
+      // 依赖收集
+      track(target, key)
+      return res;
     },
     set(target, key, value, receiver) {
       const oldValue = target[key]
       const r = Reflect.set(target, key, value, receiver);
-      // 响应式对象发生变化的时候，触发依赖
+      // 响应式对象发生变化的时候，触发effect执行
       if(oldValue !== value) {
         trigger(target, key, value, oldValue)
       }
