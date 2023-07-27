@@ -58,8 +58,6 @@ effect hua hua 6
 - effect 执行，参数 fn 执行
 - effect 里相应的属性发生变化，参数 fn 再次执行
 
-
-
 ## effect 函数首次执行
 
 ```ts
@@ -73,11 +71,43 @@ export function effect(fn) {
 变化 => 执行，典型的观察者模式，需要建立属性和 effect 的订阅和触发关系。
 
 先订阅。
-
 首次执行函数的时候，会读到属性（get），将这些属性和 effect 对应起来。
 
-然后变化，执行。
+然后变化，执行。  
 属性发生改变（set），对应的 effect 执行。
+
+## 使用 track 和 trigger
+
+reactive.js 那里，track 和 trigger 添加。这是大逻辑
+
+```ts
+const proxy = new Proxy(target, {
+  get(target, key, receiver) {
+    // ...
+    const res = Reflect.get(target, key, receiver);
+    // effect首次执行时，收集effect相关的属性
+    track(target, key);
+    return res;
+  },
+  set(target, key, value, receiver) {
+    const oldValue = target[key];
+    const r = Reflect.set(target, key, value, receiver);
+    // 属性值发生变化的时候，触发相关的effect执行
+    if (oldValue !== value) {
+      trigger(target, key);
+    }
+    return r;
+  },
+});
+```
+
+## 建立 track 和 trigger 的函数
+
+track 主要是建立属性和 effect 的映射关系，trigger 是找到属性对应的 effect，挨个执行。
+全局变量 activeEffect 和 targetMap 辅助这两方法实现。
+ReactiveEffect 类同样也是辅助，建立类的好处是方便加其他属性和逻辑。
+
+先看下 ReactiveEffect 类
 
 ```js
 // track的时候，需要拿到effect，所以用下全局变量存放effect
@@ -102,7 +132,11 @@ export function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run();
 }
+```
 
+看下 track
+
+```js
 // 本质是找到属性对应的effect，但属性存在于对象里，所以两层映射
 // 响应性对象 和 effect的映射，对象属性和effect的映射
 // targetMap = { obj:{name:[effect],age:[effect]} }
@@ -128,10 +162,14 @@ export function track(target, key) {
   // 核心代码，属性 订阅 effect （本质就是建立映射关系），上面一坨就是判断加初始化
   dep.add(activeEffect);
 }
+```
 
+看下 trigger
+
+```js
 // 属性值变化的时候，让相应的effect执行
 export function trigger(target, key) {
-  console.log('targetMap', targetMap)
+  console.log('targetMap', targetMap);
   const depsMap = targetMap.get(target);
   if (!depsMap) {
     return;
@@ -145,34 +183,10 @@ export function trigger(target, key) {
     effect.run();
   });
 }
-
 ```
 
-reactive.js 那里，track 和 trigger 添加
-
-```ts
-const proxy = new Proxy(target, {
-  get(target, key, receiver) {
-    // ...
-    const res = Reflect.get(target, key, receiver);
-    // effect首次执行时，收集effect相关的属性
-    track(target, key);
-    return res;
-  },
-  set(target, key, value, receiver) {
-    const oldValue = target[key];
-    const r = Reflect.set(target, key, value, receiver);
-    // 属性值发生变化的时候，触发相关的effect执行
-    if (oldValue !== value) {
-      trigger(target, key);
-    }
-    return r;
-  },
-});
-```
-
-换成自己的试试，`import { reactive } from './reactivity.js';`
-![effect_1](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/effect_1.png)
+index.html 里换成自己的文件试试，`import { reactive } from './reactivity.js';`
+![effect_1](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/13ac714d9b464ee1b11d9fb237daabb3~tplv-k3u1fbpfcp-zoom-1.image)
 
 整个逻辑就是，effect 首次执行的时候，触发 get，然后建立属性和 effect 的映射关系，属性值变化的时候，触发 set，然后寻找到映射的 effect，让其再执行。
 
