@@ -1,84 +1,65 @@
-// activeEffect是当前执行的effect
-export let activeEffect = null
-// ReactiveEffect是响应式effect实例
-// 作用是将fn执行，并且将fn里面的响应式对象收集起来
-export class ReactiveEffect {
-  // 默认将fn挂到实例上
-  constructor(private fn) { }
-  parent = null
-  // 响应式effect实例依赖哪些属性
-  deps = []
+// track的时候，需要拿到effect，所以用下全局变量存放effect
+let activeEffect = null;
+// 建立类，方便存放fn，和运行
+class ReactiveEffect {
+  private fn
+  constructor(fn) {
+    this.fn = fn;
+  }
   run() {
-
-    try {
-      this.parent = activeEffect;
-      activeEffect = this;
-      return this.fn();
-    } finally {
-      activeEffect = this.parent
-      this.parent = null
-    }
+    // 运行的时候，当前的effect赋值给全局，让track的时候，方便属性订阅
+    activeEffect = this;
+    this.fn();
+    // 运行完，释放
+    activeEffect = null;
   }
 }
-export function effect(fn: () => {}) {
-  // 创建一个响应式effect实例，创建这个类最主要是将fn里面的响应式对象收集起来。当然也需要保存fn执行
-  const _effect = new ReactiveEffect(fn)
-  _effect.run()
+
+export function effect(fn) {
+  const _effect = new ReactiveEffect(fn);
+  _effect.run();
 }
 
-const targetMap = new WeakMap()
+// 本质是找到属性对应的effect，但属性存在于对象里，所以两层映射
+// 响应性对象 和 effect的映射，对象属性和effect的映射
+// targetMap = { obj:{name:[effect],age:[effect]} }
+const targetMap = new WeakMap();
 
-// target是响应式对象，key是对象的key
-// 这个函数的作用是将effect存入targetMap中
+// 让属性 订阅 和自己相关的effect，建立映射关系
 export function track(target, key) {
-  if (activeEffect === null) {
-    return
+  if (!activeEffect) {
+    return;
   }
-  // targetMap是响应式对象和effect的映射关系。如果没有映射关系，就创建一个，顺手赋值
-  let depsMap = targetMap.get(target)
+  let depsMap = targetMap.get(target);
   if (!depsMap) {
-    targetMap.set(target, (depsMap = new Map()))
+    targetMap.set(target, (depsMap = new Map()));
   }
-  // 对象和effect有映射关系，就看下有没有这个属性的映射。
-  // depsMap是属性和effect的映射关系。如果没有就创建一个，顺手赋值
-  let dep = depsMap.get(key)
+  let dep = depsMap.get(key);
   if (!dep) {
-    depsMap.set(key, (dep = new Set()))
+    depsMap.set(key, (dep = new Set()));
   }
-  // activeEffect是当前执行的effect。如果属性对应的映射表里面没有这个effect，就存入。
-  // activeEffect.deps也存入这个属性对应的映射表
-  let shouldTrack = !dep.has(activeEffect)
-  if (shouldTrack) {
-    dep.add(activeEffect)
-    activeEffect.deps.push(dep)
+  // 这属性track过了
+  if (dep.has(activeEffect)) {
+    return;
   }
-
+  // 核心代码，属性 订阅 effect （本质就是建立映射关系），上面一坨就是判断加初始化
+  dep.add(activeEffect);
 }
 
-// 如果修改响应式对象的属性（set里面调用），就会触发响应的effect执行
-export function trigger(target, key, newValue, oldValue) {
-  // target是响应式对象，targetMap是响应式对象和effect的映射关系，如果没有映射关系，直接返回
-  const depsMap = targetMap.get(target)
+// 属性值变化的时候，让相应的effect执行
+export function trigger(target, key) {
+  console.log('targetMap', targetMap)
+  console.log('activeEffect', activeEffect)
+  const depsMap = targetMap.get(target);
   if (!depsMap) {
-    return
+    return;
   }
-  // 如果有映射关系，找到这个属性对应的effect。depsMap是属性和effect的映射关系
-  const dep = depsMap.get(key)
-  // 如果没有effect，直接返回
+  const dep = depsMap.get(key);
   if (!dep) {
-    return
+    return;
   }
-  // 如果有effect，遍历effect，让effect执行
-  dep.forEach(effect => {
-    // 死循环的问题，如果修改的是当前属性，直接不触发
-    // 当前执行的effect如果是activeEffect 就不要执行了
-    if (effect !== activeEffect) {
-      effect.run()
-    }
-  })
+  // 核心代码  属性相应的effect 挨个执行（上面一坨也是一样，判断）
+  dep.forEach((effect) => {
+    effect.run();
+  });
 }
-
-// reactive.ts 38行
-// if(oldValue !== value) {
-//   trigger(target, key, value, oldValue)
-// }
