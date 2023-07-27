@@ -75,6 +75,8 @@ export function effect(fn) {
 先订阅。
 
 首次执行函数的时候，会读到属性（get），将这些属性和 effect 对应起来。
+
+然后变化执行。
 属性发生改变（set），对应的 effect 执行。
 
 ```js
@@ -82,12 +84,14 @@ export function effect(fn) {
 let activeEffect = null;
 // 建立类，方便存放fn，和运行
 class ReactiveEffect {
+  private fn
   constructor(fn) {
     this.fn = fn;
   }
   run() {
     // 运行的时候，当前的effect赋值给全局，让track的时候，方便属性订阅
     activeEffect = this;
+    console.log('activeEffect', activeEffect)
     this.fn();
     // 运行完，释放
     activeEffect = null;
@@ -104,7 +108,7 @@ export function effect(fn) {
 // targetMap = { obj:{name:[effect],age:[effect]} }
 const targetMap = new WeakMap();
 
-// 让属性 订阅 和自己相关的effect，建立映射关系
+// 让属性 订阅 和自己相关的effect（建立映射关系）
 export function track(target, key) {
   if (!activeEffect) {
     return;
@@ -127,10 +131,7 @@ export function track(target, key) {
 
 // 属性值变化的时候，让相应的effect执行
 export function trigger(target, key) {
-  // 找effect
-  if (!activeEffect) {
-    return;
-  }
+  console.log('targetMap', targetMap)
   const depsMap = targetMap.get(target);
   if (!depsMap) {
     return;
@@ -141,7 +142,39 @@ export function trigger(target, key) {
   }
   // 核心代码  属性相应的effect 挨个执行（上面一坨也是一样，判断）
   dep.forEach((effect) => {
-    effect();
+    effect.run();
   });
 }
+
 ```
+
+reactive.js 那里，track 和 trigger 添加
+
+```ts
+const proxy = new Proxy(target, {
+  get(target, key, receiver) {
+    // ...
+    const res = Reflect.get(target, key, receiver);
+    // effect首次执行时，收集effect相关的属性
+    track(target, key);
+    return res;
+  },
+  set(target, key, value, receiver) {
+    const oldValue = target[key];
+    const r = Reflect.set(target, key, value, receiver);
+    // 属性值发生变化的时候，触发相关的effect执行
+    if (oldValue !== value) {
+      trigger(target, key);
+    }
+    return r;
+  },
+});
+```
+
+换成自己的试试，`import { reactive } from './reactivity.js';`
+![effect_1](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/effect_1.png)
+
+整个逻辑就是，effect首次执行的时候，触发get，然后建立属性和effect的映射关系，属性值变化的时候，触发set，然后寻找到映射的effect，让其再执行。
+
+## effect嵌套处理
+

@@ -40,7 +40,7 @@ export function reactive(target) {
       const r = Reflect.set(target, key, value, receiver);
       // 响应式对象发生变化的时候，触发effect执行
       if(oldValue !== value) {
-        trigger(target, key, value, oldValue)
+        trigger(target, key)
       }
       return r;
     },

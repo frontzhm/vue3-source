@@ -9,6 +9,7 @@ class ReactiveEffect {
   run() {
     // 运行的时候，当前的effect赋值给全局，让track的时候，方便属性订阅
     activeEffect = this;
+    console.log('activeEffect', activeEffect)
     this.fn();
     // 运行完，释放
     activeEffect = null;
@@ -49,7 +50,6 @@ export function track(target, key) {
 // 属性值变化的时候，让相应的effect执行
 export function trigger(target, key) {
   console.log('targetMap', targetMap)
-  console.log('activeEffect', activeEffect)
   const depsMap = targetMap.get(target);
   if (!depsMap) {
     return;
