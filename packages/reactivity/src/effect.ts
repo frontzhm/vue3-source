@@ -2,6 +2,8 @@
 let activeEffect = null;
 // 建立类，方便存放fn，和运行
 class ReactiveEffect {
+  // 是否主动执行
+  private active = true
   // 新增deps
   public deps = []
   private fn
@@ -12,32 +14,52 @@ class ReactiveEffect {
   }
 
   run() {
-    // 运行之前，清除依赖
-    clearEffect(this);
+    
+    
+    if (!this.active) {
+      this.fn()
+      return;
+    }
+    
     this.parent = activeEffect
     activeEffect = this;
+    // 运行之前，清除依赖
+    clearupEffect(this);
     this.fn();
     activeEffect = this.parent
     this.parent && (this.parent = null);
   }
+  stop() {
+    if (this.active) {
+      // 标记不主动执行
+      this.active = false;
+      // 清除依赖
+      clearupEffect(this);
+      console.log('清除tafget', targetMap)
+    }
+  }
 
 }
-function clearEffect(_effect) {
+function clearupEffect(_effect) {
+  console.log('清除依赖', _effect)
   // deps结构是 [[_effect1,_effect2],[_effect3,_effect2],]，假设去掉_effect2
-  _effect.deps.forEach(dep => {
-    for (let i; i < dep.length; i++) {
-      if (dep[i] === _effect) {
-        dep.delete(_effect)
-      }
-    }
-  })
-  // 同时deps置空，保证每次effect运行都是新的属性映射
-  _effect.deps.length = 0
+  // const deps = [..._effect.deps]
+  // for(let i = 0; i < deps.length; i++) {
+  //   deps[i].delete(_effect)
+  // }
+  // // 同时deps置空，保证每次effect运行都是新的属性映射
+  // _effect.deps.length = 0
+
 
 }
 export function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run();
+  // runner是个函数，等同于_effect.run，注意绑定this
+  const runner = _effect.run.bind(_effect)
+  // runner还有effect属性，直接赋值就好
+  runner.effect = _effect
+  return runner
 }
 
 // 本质是找到属性对应的effect，但属性存在于对象里，所以两层映射

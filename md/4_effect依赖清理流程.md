@@ -78,7 +78,7 @@ obj.age = '23';
 先写移除逻辑
 
 ```js
-function clearEffect(_effect) {
+function clearupEffect(_effect) {
   // deps结构是 [[_effect1,_effect2],[_effect3,_effect2],]，假设去掉_effect2
   _effect.deps.forEach((dep) => {
     for (let i; i < dep.length; i++) {
@@ -102,7 +102,7 @@ class ReactiveEffect {
 
   run() {
     // 运行之前，清除依赖
-    clearEffect(this);
+    clearupEffect(this);
     // ...
   }
 
@@ -142,7 +142,7 @@ class ReactiveEffect {
 
   run() {
     // 运行之前，清除依赖
-    clearEffect(this);
+    clearupEffect(this);
     this.parent = activeEffect;
     activeEffect = this;
     this.fn();
@@ -150,7 +150,7 @@ class ReactiveEffect {
     this.parent && (this.parent = null);
   }
 }
-function clearEffect(_effect) {
+function clearupEffect(_effect) {
   // deps结构是 [[_effect1,_effect2],[_effect3,_effect2],]，假设去掉_effect2
   _effect.deps.forEach((dep) => {
     for (let i; i < dep.length; i++) {
