@@ -14,17 +14,14 @@ class ReactiveEffect {
   }
 
   run() {
-    
-    
+    // 运行之前，清除依赖
+    clearupEffect(this);
     if (!this.active) {
       this.fn()
       return;
     }
-    
     this.parent = activeEffect
     activeEffect = this;
-    // 运行之前，清除依赖
-    clearupEffect(this);
     this.fn();
     activeEffect = this.parent
     this.parent && (this.parent = null);
@@ -47,8 +44,8 @@ function clearupEffect(_effect) {
   // for(let i = 0; i < deps.length; i++) {
   //   deps[i].delete(_effect)
   // }
-  // // 同时deps置空，保证每次effect运行都是新的属性映射
-  // _effect.deps.length = 0
+  // 同时deps置空，保证每次effect运行都是新的属性映射
+  _effect.deps.length = 0
 
 
 }
