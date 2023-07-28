@@ -24,7 +24,6 @@ export function reactive(target) {
   }
   const proxy = new Proxy(target, {
     get(target, key, receiver) {
-      console.log('读取key', key);
       // 这里埋点，加上__v_isReactive属性，标识已经代理过了
       if (key === '__v_isReactive') {
         return true
