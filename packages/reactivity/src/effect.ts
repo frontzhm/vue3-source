@@ -5,50 +5,56 @@ class ReactiveEffect {
   // 是否主动执行
   private active = true
   // 新增deps
-  public deps = []
-  private fn
-  private parent
-
+  deps = []
+  fn
+  parent
   constructor(fn) {
     this.fn = fn;
+
   }
 
   run() {
-    // 运行之前，清除依赖
-    clearupEffect(this);
     if (!this.active) {
       this.fn()
       return;
     }
+    
     this.parent = activeEffect
     activeEffect = this;
+    // 运行之前，清除依赖
+    clearupEffect(this);
     this.fn();
     activeEffect = this.parent
     this.parent && (this.parent = null);
   }
   stop() {
     if (this.active) {
-      // 标记不主动执行
-      this.active = false;
       // 清除依赖
       clearupEffect(this);
-      console.log('清除tafget', targetMap)
+      // 标记不主动执行
+      this.active = false;
+      
     }
   }
 
+
+
 }
+
+// 清除依賴
 function clearupEffect(_effect) {
-  console.log('清除依赖', _effect)
   // deps结构是 [[_effect1,_effect2],[_effect3,_effect2],]，假设去掉_effect2
-  // const deps = [..._effect.deps]
-  // for(let i = 0; i < deps.length; i++) {
-  //   deps[i].delete(_effect)
-  // }
+  const deps = _effect.deps
+  for (let i = 0; i < deps.length; i++) {
+    deps[i].delete(_effect)
+  }
   // 同时deps置空，保证每次effect运行都是新的属性映射
   _effect.deps.length = 0
-
-
 }
+  
+
+
+// }
 export function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run();
@@ -98,8 +104,10 @@ export function trigger(target, key) {
   if (!dep) {
     return;
   }
+
   // 核心代码  属性相应的effect 挨个执行（上面一坨也是一样，判断）
-  dep.forEach((effect) => {
+  // 注意，这里要浅拷贝，不然set删除effect的时候，就死循环了
+  [...dep].forEach((effect) => {
     activeEffect !== effect && effect.run();
   });
 }
