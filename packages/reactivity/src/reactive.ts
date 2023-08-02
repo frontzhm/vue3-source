@@ -32,6 +32,10 @@ export function reactive(target) {
       const res = Reflect.get(target, key, receiver);
       // 依赖收集
       track(target, key)
+      // 如果是对象，递归代理
+      if(isObject(res)) {
+        return reactive(res)
+      }
       return res;
     },
     set(target, key, value, receiver) {
