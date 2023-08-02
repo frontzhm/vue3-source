@@ -68,5 +68,8 @@ export function trigger(target, key) {
 }
 ```
 
+换回自己的，就可以了
 
+## 总结
 
+effect 首先是个函数 => 每次执行，清除依赖 => 可以手动调用和停止 => 有scheduler直接执行scheduler
