@@ -125,6 +125,7 @@ export function trigger(target, key) {
   // ....
   // 这里浅拷贝一份执行，这样删了之后，在执行就不会死循环了
   [...dep].forEach((effect) => {
+    // 这里是出现死循环的根本原因，一边遍历dep的effect，一边执行，而执行的时候，又在删除这里的effect，所以死循环
     activeEffect !== effect && effect.run();
   });
 }
@@ -246,6 +247,7 @@ export function trigger(target, key) {
   // 核心代码  属性相应的effect 挨个执行（上面一坨也是一样，判断）
   // 注意，这里要浅拷贝，不然set删除effect的时候，就死循环了
   [...dep].forEach((effect) => {
+    // 这里是出现死循环的根本原因，一边遍历dep的effect，一边执行，而执行的时候，又在删除这里的effect，所以死循环
     activeEffect !== effect && effect.run();
   });
 }

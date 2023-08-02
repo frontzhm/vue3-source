@@ -6,11 +6,8 @@ class ReactiveEffect {
   private active = true
   // 新增deps
   deps = []
-  fn
   parent
-  constructor(fn) {
-    this.fn = fn;
-
+  constructor(private fn, public scheduler) {
   }
 
   run() {
@@ -18,7 +15,7 @@ class ReactiveEffect {
       this.fn()
       return;
     }
-    
+
     this.parent = activeEffect
     activeEffect = this;
     // 运行之前，清除依赖
@@ -33,7 +30,7 @@ class ReactiveEffect {
       clearupEffect(this);
       // 标记不主动执行
       this.active = false;
-      
+
     }
   }
 
@@ -51,12 +48,12 @@ function clearupEffect(_effect) {
   // 同时deps置空，保证每次effect运行都是新的属性映射
   _effect.deps.length = 0
 }
-  
+
 
 
 // }
-export function effect(fn) {
-  const _effect = new ReactiveEffect(fn);
+export function effect(fn, options) {
+  const _effect = new ReactiveEffect(fn, options?.scheduler);
   _effect.run();
   // runner是个函数，等同于_effect.run，注意绑定this
   const runner = _effect.run.bind(_effect)
@@ -109,6 +106,6 @@ export function trigger(target, key) {
   // 注意，这里要浅拷贝，不然set删除effect的时候，就死循环了
   [...dep].forEach((effect) => {
     // 这里是出现死循环的根本原因，一边遍历dep的effect，一边执行，而执行的时候，又在删除这里的effect，所以死循环
-    activeEffect !== effect && effect.run();
+    activeEffect !== effect && (effect.scheduler ? effect.scheduler() : effect.run());
   });
 }
