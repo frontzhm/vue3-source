@@ -190,7 +190,6 @@ function watchFunction(source, cb) {
 }
 
 function watchReactive(source, cb) {
-  // TODO 循环引用没看明白 之后再补吧
   for (const key in source) {
     watchFunction(
       () => source[key],
