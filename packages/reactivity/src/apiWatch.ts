@@ -1,7 +1,7 @@
 import { ReactiveEffect } from './effect';
 import { isReactive, isFunction } from './reactive';
 // watch字段，提取成一个函数
-function watchFunction (source, cb)  {
+function watchFunction(source, cb) {
   // source是函数-返回字段，()=>obj.name，就是fn直接执行，收集属性
   // scheduler只有在属性发生变化的时候，才会执行
   let oldValue;
@@ -17,6 +17,7 @@ function watchFunction (source, cb)  {
 };
 
 function watchReactive(source, cb) {
+  // TODO 循环引用没看明白 之后再补吧
   for (const key in source) {
     watchFunction(() => source[key], () => { cb(source, source); });
   }
