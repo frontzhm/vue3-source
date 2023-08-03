@@ -1,7 +1,7 @@
 // track的时候，需要拿到effect，所以用下全局变量存放effect
 let activeEffect = null;
 // 建立类，方便存放fn，和运行
-class ReactiveEffect {
+export class ReactiveEffect {
   // 是否主动执行
   private active = true
   // 新增deps
@@ -12,17 +12,19 @@ class ReactiveEffect {
 
   run() {
     if (!this.active) {
-      this.fn()
-      return;
+      const res = this.fn()
+      // 这里watch的时候，fn是函数返回字段，需要返回值
+      return res;
     }
 
     this.parent = activeEffect
     activeEffect = this;
     // 运行之前，清除依赖
     clearupEffect(this);
-    this.fn();
+    const res = this.fn();
     activeEffect = this.parent
     this.parent && (this.parent = null);
+    return res
   }
   stop() {
     if (this.active) {
