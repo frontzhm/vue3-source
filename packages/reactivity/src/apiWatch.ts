@@ -23,6 +23,10 @@ function watchReactive(source, cb) {
   }
 }
 
+export function watchEffect(cb) {
+  const _effect = new ReactiveEffect(cb,null);
+  _effect.run();
+}
 export function watch(source, cb) {
   isFunction(source) && watchFunction(source, cb);
   isReactive(source) && watchReactive(source, cb);

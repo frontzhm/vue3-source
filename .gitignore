@@ -1,2 +1,4 @@
 node_modules
 dist/
+video-imgs/video/*
+video-imgs/*
