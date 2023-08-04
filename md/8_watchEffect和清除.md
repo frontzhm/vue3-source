@@ -1,12 +1,12 @@
 ---
-title: watchEffect和清除 - 源码系列8
+title: watchEffect的简易版 - 源码系列8
 tags: vue
 categories: vue
 theme: vue-pro
 highlight:
 ---
 
-写 watchEffect 和清除逻辑 了！
+写 watchEffect了，这个真真算容易了！
 
 ## 目标 watchEffect
 
@@ -34,15 +34,15 @@ watchEffect(
 obj.name = 'hua changed';
 ```
 
-![watchEffect_1](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/watchEffect_1.png)
+![watchEffect\_1](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5944efba056e4ec9929fd58111cb92a1~tplv-k3u1fbpfcp-zoom-1.image)
 
 没有加配置的 watchEfect，默认是异步执行的，这里先将其设置为同步，异步之后再写。
 
 ## 分析 watchEffect
 
-- watchEffect 是一个函数，可以有 2 个参数
-- 第一个参数，是回调函数
-- 第二个参数，是配置项
+*   watchEffect 是一个函数，可以有 2 个参数
+*   第一个参数，是回调函数
+*   第二个参数，是配置项，暂时不管
 
 最重点的是，这个和 effect 走起来基本一模一样啊！
 
