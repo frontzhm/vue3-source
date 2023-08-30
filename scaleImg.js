@@ -1,6 +1,7 @@
-
+// @ts-nocheck
+// @ts-ignore
 //是否显示了， 用来决定是否监听滚轮
-let isListenWheel = false;
+// let options.isListenWheel = false;
 //缩放 //按照最长边缩放
 let startZoom = 1
 //提示的延时
@@ -19,13 +20,13 @@ let hasCloseBox = true;
 
 //几个dom
 //box
-let zoomBox;
+// let options.zoomBox;
 //图片
-let img;
+// let img;
 //操作的按钮
-let mod;
+// let options.mod;
 //缩放比例提示
-let hint;
+// let options.hint;
 
 //缩放的比例
 let scale = 1.0;
@@ -77,33 +78,33 @@ function scaleImg(data, follow = false) {
     options.deg = 0;
     let box = document.getElementById("yyz-img-zoom");
     box && box.remove();
-    zoomBox = createZoomBox(isClickShadeClose)
-    document.body.appendChild(zoomBox);
+    options.zoomBox = createZoomBox(isClickShadeClose)
+    document.body.appendChild(options.zoomBox);
     //要延时一点点时间
     setTimeout(function () {
-        zoomBox.style.background = colorMask;
+        options.zoomBox.style.background = colorMask;
     }, 1);
     
     // 比例放大多少的toast
-    hint = createHint()
-    zoomBox.appendChild(hint);
+    options.hint = createHint()
+    options.zoomBox.appendChild(options.hint);
 
     // 中间的图片
-    img = createImg(data, follow)
-    zoomBox.appendChild(img);
+    options.img = createImg(data, follow)
+    options.zoomBox.appendChild(options.img);
 
     // 关闭和中间放大缩小旋转 操作层
-    mod = createMod()
-    //要延时一点点时间 显示 mod
-    setTimeout(() => document.body.appendChild(mod), 250);
-    isListenWheel = true;
+    options.mod = createMod()
+    //要延时一点点时间 显示 options.mod
+    setTimeout(() => document.body.appendChild(options.mod), 250);
+    options.isListenWheel = true;
 
 }
 
 function createZoomBox  (isClickShadeClose = true)  {
-    const zoomBox = document.createElement('div'); //1、创建元素
-    zoomBox.id = "yyz-img-zoom";   //id
-    zoomBox.style.cssText = `
+    const zoomBoxEl = document.createElement('div'); //1、创建元素
+    zoomBoxEl.id = "yyz-img-zoom";   //id
+    zoomBoxEl.style.cssText = `
         width: 100%;
         height: 100vh;
         position: fixed;
@@ -117,22 +118,22 @@ function createZoomBox  (isClickShadeClose = true)  {
         align-items: center;
     `
 
-    isClickShadeClose && zoomBox.addEventListener('click', function () {
+    isClickShadeClose && zoomBoxEl.addEventListener('click', function () {
         close();
     });
     //手势开始
-    zoomBox.addEventListener('touchstart', (event) => handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }));
+    zoomBoxEl.addEventListener('touchstart', (event) => handleTouchStart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }));
     // 手势移动
-    zoomBox.addEventListener('touchmove', (event) => handleTouchMove(event, { getDst, getZhong, getDeg,  sizeCallback, hintPopup, img, canRotate,  }));
+    zoomBoxEl.addEventListener('touchmove', (event) => handleTouchMove(event, { getDst, getZhong, getDeg,  sizeCallback, hintPopup, canRotate,  }));
     // 手势结束
-    zoomBox.addEventListener('touchend', (event) => handleTouchEnd(event, { startX, startY, startTop, startLeft, img }));
+    zoomBoxEl.addEventListener('touchend', (event) => handleTouchEnd(event, { startX, startY, startTop, startLeft }));
     
-    return zoomBox
+    return zoomBoxEl
 }
 function createHint  ()  {
-    const hint = document.createElement('div'); //1、创建元素
+    const hintEl = document.createElement('div'); //1、创建元素
 
-    hint.style.cssText = `
+    hintEl.style.cssText = `
         border-radius: 60px;
         background-color: #000;
         color: #fff;
@@ -141,14 +142,14 @@ function createHint  ()  {
         display: none;
         user-select: none; 
     `
-    hint.addEventListener('click', e => e.stopPropagation());
-    return hint
+    hintEl.addEventListener('click', e => e.stopPropagation());
+    return hintEl
 }
 
 // window.onmousewheel = document.onmousewheel = scrollFunc;//IE/Opera/Chrome
 // 
 function createImg(data, follow) {
-    const img = document.createElement('img');
+    const imgEl = document.createElement('img');
 
     let cssText = `
         width: 10px;
@@ -168,7 +169,7 @@ function createImg(data, follow) {
         cssText = follow ? followCss : cssText;
     }
 
-    img.style.cssText = cssText + `
+    imgEl.style.cssText = cssText + `
         z-index: 1002;
         position: absolute;
         cursor: move;
@@ -176,58 +177,58 @@ function createImg(data, follow) {
         user-select: none;
         `
 
-    img.id = "yyz-img"
+    imgEl.id = "yyz-img"
     const url = typeof (data) == 'string' ? data : data.src
-    img.src = url;
-    img.draggable = false;//设置pc端不可拖动
-    img.addEventListener('click', e => e.stopPropagation());
+    imgEl.src = url;
+    imgEl.draggable = false;//设置pc端不可拖动
+    imgEl.addEventListener('click', e => e.stopPropagation());
     //图片加载完毕
-    img.onload = function () {
+    imgEl.onload = function () {
         //判断那一边是长边
-        const isWidthLonger = (img.offsetWidth / img.offsetHeight) > (zoomBox.offsetWidth / zoomBox.offsetHeight)
+        const isWidthLonger = (imgEl.offsetWidth / imgEl.offsetHeight) > (options.zoomBox.offsetWidth / options.zoomBox.offsetHeight)
         const widthLongerCss = `
         transition: all 0.5s;
         height: auto;
         width: ${startZoom * 100}%;
-        left: ${(zoomBox.offsetWidth - (zoomBox.offsetWidth * startZoom)) / 2}px;
-        top: ${(zoomBox.offsetHeight - ((startZoom * zoomBox.offsetWidth) * (img.offsetHeight / img.offsetWidth))) / 2}px;
+        left: ${(options.zoomBox.offsetWidth - (options.zoomBox.offsetWidth * startZoom)) / 2}px;
+        top: ${(options.zoomBox.offsetHeight - ((startZoom * options.zoomBox.offsetWidth) * (imgEl.offsetHeight / imgEl.offsetWidth))) / 2}px;
     `
 
         const heightLongerCss = `
         transition: all 0.5s;
         width: auto;
         height: ${startZoom * 100}%;
-        top: ${(zoomBox.offsetHeight - (zoomBox.offsetHeight * startZoom)) / 2}px;
-        left: ${(zoomBox.offsetWidth - ((zoomBox.offsetHeight * startZoom) * (img.offsetWidth / img.offsetHeight))) / 2}px;
+        top: ${(options.zoomBox.offsetHeight - (options.zoomBox.offsetHeight * startZoom)) / 2}px;
+        left: ${(options.zoomBox.offsetWidth - ((options.zoomBox.offsetHeight * startZoom) * (imgEl.offsetWidth / imgEl.offsetHeight))) / 2}px;
     `
-        img.style.cssText += isWidthLonger ? widthLongerCss : heightLongerCss;
+        imgEl.style.cssText += isWidthLonger ? widthLongerCss : heightLongerCss;
 
         setTimeout(function () {
-            img.style.transition = ""
-            imgWidth = img.offsetWidth;
-            imgHeight = img.offsetHeight;
+            imgEl.style.transition = ""
+            imgWidth = imgEl.offsetWidth;
+            imgHeight = imgEl.offsetHeight;
         }, 500);
 
     }
     // pc移动
-    img.onmousedown = event => {
+    imgEl.onmousedown = event => {
         event.stopPropagation();
-        let disX = event.clientX - img.offsetLeft;
-        let disY = event.clientY - img.offsetTop;
+        let disX = event.clientX - imgEl.offsetLeft;
+        let disY = event.clientY - imgEl.offsetTop;
         document.onmousemove = (event) => {
-            img.style.left = event.clientX - disX + "px";
-            img.style.top = event.clientY - disY + "px";
+            imgEl.style.left = event.clientX - disX + "px";
+            imgEl.style.top = event.clientY - disY + "px";
         };
     };
-    img.onmouseup = () => {
+    imgEl.onmouseup = () => {
         document.onmousemove = null;
     };
-    return img;
+    return imgEl;
 }
 function createMod() {
-    const mod = document.createElement('div');
+    const modEl = document.createElement('div');
 
-    mod.style.cssText = `
+    modEl.style.cssText = `
         z-index: 1005;
         -webkit-tap-highlight-color: transparent;
         position: fixed;
@@ -238,9 +239,9 @@ function createMod() {
         pointer-events: none;
     `
     if (hasCloseBox) {
-        // mod.appendChild(createCloseBox())
+        // modEl.appendChild(createCloseBox())
         const closeBox = ` <div class="close-box"  onclick="YJIC.close()" style="pointer-events: auto;cursor:pointer; position: absolute;right: 0;top: 0;border-radius: 0 0 0 60px; width: 50px;height: 50px;background-color:rgba(0, 0, 0, .3);"> <div class="close-icon-div" style="width: 14px;height: 14px;padding: 3px; position: absolute;right: 10px;top: 10px;"> <svg t="1616924133328" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2052" width="14" height="14"><path d="M1023.997 114.97 911.408 2.388 516.149 397.629 118.5 0 5.91 112.585l397.649 397.629L7.107 906.648l112.587 112.59 396.454-396.439 395.259 395.249 112.59-112.59L628.738 510.214 1023.997 114.97z" p-id="2053" fill="#ffffff"></path></svg> </div> </div> `
-        mod.innerHTML += closeBox
+        modEl.innerHTML += closeBox
     }
     if (hasActionBox) {
         const actionBox = `<div style="pointer-events: auto;position: absolute;bottom: 20px;left:0;width: 100%;">
@@ -259,9 +260,9 @@ function createMod() {
             </div>
         </div>
     </div>`
-        mod.innerHTML += actionBox;
+        modEl.innerHTML += actionBox;
     }
-    return mod
+    return modEl
 }
 /**
  * 计算两个触点的位置
@@ -312,7 +313,7 @@ function getZhong(touch1, touch2) {
 
 //下面适配pc
 let scrollFunc = function (e) {
-    if (!isListenWheel) {
+    if (!options.isListenWheel) {
         return;
     }
     e = e || window.event;
@@ -342,7 +343,7 @@ let scrollFunc = function (e) {
 
     let newW = options.scale * imgWidth;
     let newH = options.scale * imgHeight;
-
+    const img = options.img
     //旧的高度
     let oldH = img.offsetHeight;
     let oldW = img.offsetWidth;
@@ -369,7 +370,8 @@ window.addEventListener('mousewheel', scrollFunc, {
 
 
 /**  辅助方法  */
-function handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }) {
+function handleTouchStart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }) {
+    const img = options.img
     if (event.touches.length >= 2) {
         //计算一下两个触点的初始角度 - 已经旋转的角度
         startDeg = getDeg(event.touches[0], event.touches[1]) - options.deg;
@@ -397,7 +399,8 @@ function handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst,
     //阻止浏览器默认行为
     event.preventDefault();
 }
-function handleTouchMove(event, { getDst, getZhong, getDeg, sizeCallback, hintPopup, img, canRotate }) {
+function handleTouchMove(event, { getDst, getZhong, getDeg, sizeCallback, hintPopup, canRotate }) {
+    const img = options.img
 
     if (event.touches.length >= 2) {
         // 计算当前两个触点的距离
@@ -412,7 +415,6 @@ function handleTouchMove(event, { getDst, getZhong, getDeg, sizeCallback, hintPo
 
         let newW = options.scale * imgWidth;
         let newH = options.scale * imgHeight;
-
         //按照比例进行缩放
         img.style.width = newW + 'px';
         img.style.height = newH + 'px';
@@ -439,7 +441,8 @@ function handleTouchMove(event, { getDst, getZhong, getDeg, sizeCallback, hintPo
         img.style.top = Y + startTop + 'px';
     }
 }
-function handleTouchEnd(event, { startX, startY, startTop, startLeft, img }) {
+function handleTouchEnd(event, { startX, startY, startTop, startLeft,  }) {
+    const img = options.img
     if (event.touches.length == 1) {
         //从两指变成一指， 要重置 触点的坐标 和 img的top和left ，不然会乱飙
         startX = event.touches[0].clientX;
@@ -457,13 +460,13 @@ function handleTouchEnd(event, { startX, startY, startTop, startLeft, img }) {
  */
 function hintPopup(s) {
     if (hintTime == 0) return
-    hint.style.display = ""
-    hint.innerText = s;
+    options.hint.style.display = ""
+    options.hint.innerText = s;
     if (hintTimer) {
         clearTimeout(hintTimer);
     }
     hintTimer = setTimeout(function () {
-        hint.style.display = "none"
+        options.hint.style.display = "none"
     }, hintTime);
 }
 let hintTimer; //提示的定时器
@@ -521,6 +524,7 @@ function rotateRight(e) {
  * 更新旋转，带动画
  */
 function upRotate() {
+    const img = options.img
     img.style.transition = "transform 0.3s"
     img.style.transform = 'rotate(' + options.deg + 'deg)';
     clearTimeout(rotateTimer);
@@ -547,14 +551,14 @@ function upSize() {
 
     let newW = options.scale * imgWidth;
     let newH = options.scale * imgHeight;
-
+    const img = options.img
     //旧的高度
     let oldH = img.offsetHeight;
     let oldW = img.offsetWidth;
 
     //计算中点在图片上的比例
-    let imgNtop = (zoomBox.offsetHeight / 2 - img.offsetTop) / img.offsetHeight;
-    let imgNleft = (zoomBox.offsetWidth / 2 - img.offsetLeft) / img.offsetWidth;
+    let imgNtop = (options.zoomBox.offsetHeight / 2 - img.offsetTop) / img.offsetHeight;
+    let imgNleft = (options.zoomBox.offsetWidth / 2 - img.offsetLeft) / img.offsetWidth;
 
 
     img.style.transition = "all 0.3s"
@@ -609,21 +613,21 @@ function setBackCallback(call) {
  * 关闭
  */
 function close() {
-    if (zoomBox == null) {
+    if (options.zoomBox == null) {
         return
     }
     if (backCallback != null) {
         backCallback();
     }
-    isListenWheel = false
-    // mod.remove();
-    mod.parentNode.removeChild(mod);
+    options.isListenWheel = false
+    // options.mod.remove();
+    options.mod.parentNode.removeChild(options.mod);
     // alert()
     // div = document.getElementById("yyz-img-zoom");
-    zoomBox.style.transition = "all 0.2s"
-    zoomBox.style.opacity = 0;
+    options.zoomBox.style.transition = "all 0.2s"
+    options.zoomBox.style.opacity = 0;
     setTimeout(function () {
-        zoomBox.parentNode.removeChild(zoomBox);
+        options.zoomBox.parentNode.removeChild(options.zoomBox);
         // box.remove();
     }, 200);
 }
