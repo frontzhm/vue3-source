@@ -4,7 +4,7 @@ const defaultOptions = {
     scale: 1.0,
     //旋转的角度
     deg: 0,
-    zoomBox: null,
+    layerImage: null,
     hint: null,
     img: null,
     mod: null,
@@ -22,15 +22,15 @@ function previewImage(urlOrImgEl, options = {}) {
     // scale: 1.0,
     // //旋转的角度
     // deg: 0,
-    // zoomBox: null,
+    // layerImage: null,
     // hint: null,
     // img: null,
     // mod: null,
     let scale = 1.0; // 缩放的比例
     let deg = 0; // 旋转的角度
-    let zoomBox = null;
+    let layerImage = null;
     let hint = null;
-    let img = null;
+    let imgMiddle = null;
     let mod = null;
 
     //图片的高度和宽度
@@ -43,25 +43,25 @@ function previewImage(urlOrImgEl, options = {}) {
         
         let box = document.getElementById("yyz-img-zoom");
         box && box.remove();
-        options.zoomBox = createZoomBox(options.isClickShadeClose)
-        document.body.appendChild(options.zoomBox);
+        layerImage = createZoomBox(options.isClickShadeClose)
+        document.body.appendChild(layerImage);
         //要延时一点点时间
         setTimeout(function () {
-            options.zoomBox.style.background = options.colorMask;
+            layerImage.style.background = options.colorMask;
         }, 1);
 
         // 比例放大多少的toast
-        options.hint = createHint()
-        options.zoomBox.appendChild(options.hint);
+        hint = createHint()
+        layerImage.appendChild(hint);
 
         // 中间的图片
-        options.img = createImg(urlOrImgEl, hasAnimateWhenIsImgEl, options)
-        options.zoomBox.appendChild(options.img);
+        imgMiddle = createImg(urlOrImgEl, hasAnimateWhenIsImgEl, options)
+        layerImage.appendChild(imgMiddle);
 
         // 关闭和中间放大缩小旋转 操作层
-        options.mod = createMod(options)
-        //要延时一点点时间 显示 options.mod
-        setTimeout(() => document.body.appendChild(options.mod), 250);
+        layerAction = createMod(options)
+        //要延时一点点时间 显示 layerAction
+        setTimeout(() => document.body.appendChild(layerAction), 250);
         options.isListenWheel = true;
 
     }
@@ -88,7 +88,7 @@ function previewImage(urlOrImgEl, options = {}) {
         let startZhong; //格式 {x: , y: }
         /**  辅助方法  */
         function handleTouchStart(event) {
-            const img = options.img
+            const img = imgMiddle
             if (event.touches.length >= 2) {
                 //计算一下两个触点的初始角度 - 已经旋转的角度
                 startDeg = getDeg(event.touches[0], event.touches[1]) - deg;
@@ -117,7 +117,7 @@ function previewImage(urlOrImgEl, options = {}) {
             event.preventDefault();
         }
         function handleTouchMove(event, { sizeCallback, hintPopup }) {
-            const img = options.img
+            const img = imgMiddle
             //旋转 
             let canRotate = false;
 
@@ -161,7 +161,7 @@ function previewImage(urlOrImgEl, options = {}) {
             }
         }
         function handleTouchEnd(event) {
-            const img = options.img
+            const img = imgMiddle
             if (event.touches.length == 1) {
                 //从两指变成一指， 要重置 触点的坐标 和 img的top和left ，不然会乱飙
                 startX = event.touches[0].clientX;
@@ -252,21 +252,21 @@ function previewImage(urlOrImgEl, options = {}) {
         //图片加载完毕
         imgEl.onload = function () {
             //判断那一边是长边
-            const isWidthLonger = (imgEl.offsetWidth / imgEl.offsetHeight) > (options.zoomBox.offsetWidth / options.zoomBox.offsetHeight)
+            const isWidthLonger = (imgEl.offsetWidth / imgEl.offsetHeight) > (layerImage.offsetWidth / layerImage.offsetHeight)
             const widthLongerCss = `
         transition: all 0.5s;
         height: auto;
         width: ${startZoom * 100}%;
-        left: ${(options.zoomBox.offsetWidth - (options.zoomBox.offsetWidth * startZoom)) / 2}px;
-        top: ${(options.zoomBox.offsetHeight - ((startZoom * options.zoomBox.offsetWidth) * (imgEl.offsetHeight / imgEl.offsetWidth))) / 2}px;
+        left: ${(layerImage.offsetWidth - (layerImage.offsetWidth * startZoom)) / 2}px;
+        top: ${(layerImage.offsetHeight - ((startZoom * layerImage.offsetWidth) * (imgEl.offsetHeight / imgEl.offsetWidth))) / 2}px;
     `
 
             const heightLongerCss = `
         transition: all 0.5s;
         width: auto;
         height: ${startZoom * 100}%;
-        top: ${(options.zoomBox.offsetHeight - (options.zoomBox.offsetHeight * startZoom)) / 2}px;
-        left: ${(options.zoomBox.offsetWidth - ((options.zoomBox.offsetHeight * startZoom) * (imgEl.offsetWidth / imgEl.offsetHeight))) / 2}px;
+        top: ${(layerImage.offsetHeight - (layerImage.offsetHeight * startZoom)) / 2}px;
+        left: ${(layerImage.offsetWidth - ((layerImage.offsetHeight * startZoom) * (imgEl.offsetWidth / imgEl.offsetHeight))) / 2}px;
     `
             imgEl.style.cssText += isWidthLonger ? widthLongerCss : heightLongerCss;
 
@@ -411,7 +411,7 @@ function previewImage(urlOrImgEl, options = {}) {
 
         let newW = scale * imgWidth;
         let newH = scale * imgHeight;
-        const img = options.img
+        const img = imgMiddle
         //旧的高度
         let oldH = img.offsetHeight;
         let oldW = img.offsetWidth;
@@ -448,13 +448,13 @@ function previewImage(urlOrImgEl, options = {}) {
     function hintPopup(textToast) {
         let hintTime = 300;
         if (hintTime == 0) return
-        options.hint.style.display = ""
-        options.hint.innerText = textToast;
+        hint.style.display = ""
+        hint.innerText = textToast;
         if (hintTimer) {
             clearTimeout(hintTimer);
         }
         hintTimer = setTimeout(function () {
-            options.hint.style.display = "none"
+            hint.style.display = "none"
         }, hintTime);
     }
     let hintTimer; //提示的定时器
@@ -512,7 +512,7 @@ function previewImage(urlOrImgEl, options = {}) {
      * 更新旋转，带动画
      */
     function upRotate() {
-        const img = options.img
+        const img = imgMiddle
         img.style.transition = "transform 0.3s"
         img.style.transform = 'rotate(' + deg + 'deg)';
         clearTimeout(rotateTimer);
@@ -539,14 +539,14 @@ function previewImage(urlOrImgEl, options = {}) {
 
         let newW = scale * imgWidth;
         let newH = scale * imgHeight;
-        const img = options.img
+        const img = imgMiddle
         //旧的高度
         let oldH = img.offsetHeight;
         let oldW = img.offsetWidth;
 
         //计算中点在图片上的比例
-        let imgNtop = (options.zoomBox.offsetHeight / 2 - img.offsetTop) / img.offsetHeight;
-        let imgNleft = (options.zoomBox.offsetWidth / 2 - img.offsetLeft) / img.offsetWidth;
+        let imgNtop = (layerImage.offsetHeight / 2 - img.offsetTop) / img.offsetHeight;
+        let imgNleft = (layerImage.offsetWidth / 2 - img.offsetLeft) / img.offsetWidth;
 
 
         img.style.transition = "all 0.3s"
@@ -601,18 +601,18 @@ function previewImage(urlOrImgEl, options = {}) {
      * 关闭
      */
     function close() {
-        if (options.zoomBox == null) {
+        if (layerImage == null) {
             return
         }
 
         options.isListenWheel = false
         // 移除操作层
-        options.mod.parentNode.removeChild(options.mod);
+        layerAction.parentNode.removeChild(layerAction);
         // 图片层先动画，然后消失
         ; (function removeImgLayerAfterAnimate() {
-            options.zoomBox.style.transition = "all 0.2s"
-            options.zoomBox.style.opacity = 0;
-            setTimeout(() => options.zoomBox.parentNode.removeChild(options.zoomBox), 200);
+            layerImage.style.transition = "all 0.2s"
+            layerImage.style.opacity = 0;
+            setTimeout(() => layerImage.parentNode.removeChild(layerImage), 200);
         })();
     }
     /**
