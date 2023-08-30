@@ -1,6 +1,6 @@
 
 //是否显示了， 用来决定是否监听滚轮
-let If = false;
+let isListenWheel = false;
 //缩放 //按照最长边缩放
 let startZoom = 1
 //提示的延时
@@ -70,244 +70,242 @@ function setData(data, follow = false) {
     if (box) {
         box.remove();
     }
-
-    const createZoomBox = (isClickShadeClose = true) => {
-        const div = document.createElement('div'); //1、创建元素
-        div.id = "yyz-img-zoom";   //id
-        div.style.cssText = `
-            width: 100%;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: rgba(0,0,0,0);
-            transition: background 0.5s;
-            z-index: 1001;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        `
-
-        isClickShadeClose && div.addEventListener('click', function () {
-            close();
-        });
-        return div
-    }
     div = createZoomBox(isClickShadeClose)
+    document.body.appendChild(div);
+    //要延时一点点时间
+    setTimeout(function () {
+        div.style.background = bgc;
+    }, 1);
+    
+    // 比例放大多少的toast
+    hint = createHint()
+    div.appendChild(hint);
 
+    // 中间的图片
+    img = createImg(data, follow)
+    div.appendChild(img);
+
+    // 关闭和中间放大缩小旋转 操作层
+    mod = createMod()
+    //要延时一点点时间 显示 mod
+    setTimeout(() => document.body.appendChild(mod), 250);
+    isListenWheel = true;
+
+}
+
+function createZoomBox  (isClickShadeClose = true)  {
+    const div = document.createElement('div'); //1、创建元素
+    div.id = "yyz-img-zoom";   //id
+    div.style.cssText = `
+        width: 100%;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        background: rgba(0,0,0,0);
+        transition: background 0.5s;
+        z-index: 1001;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    `
+
+    isClickShadeClose && div.addEventListener('click', function () {
+        close();
+    });
     //手势开始
     div.addEventListener('touchstart', (event) => handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }));
     // 手势移动
     div.addEventListener('touchmove', (event) => handleTouchMove(event, { getDst, getZhong, getDeg, scale, sizeCallback, hintPopup, img, canRotate, deg }));
     // 手势结束
     div.addEventListener('touchend', (event) => handleTouchEnd(event, { startX, startY, startTop, startLeft, img }));
-    document.body.appendChild(div);
-    //要延时一点点时间
-    setTimeout(function () {
-        div.style.background = bgc;
-    }, 1);
-    const createHint = () => {
-        const hint = document.createElement('div'); //1、创建元素
-
-        hint.style.cssText = `
-            border-radius: 60px;
-            background-color: #000;
-            color: #fff;
-            padding: 2px 5px;
-            z-index: 1003;
-            display: none;
-            user-select: none; 
-        `
-        hint.addEventListener('click', e => e.stopPropagation());
-        return hint
-    }
-    hint = createHint()
-    div.appendChild(hint);
-
     
-    img = createImg(data, follow)
+    return div
+}
+function createHint  ()  {
+    const hint = document.createElement('div'); //1、创建元素
 
-    div.appendChild(img);
-    mod = createMod()
-    //要延时一点点时间 显示 mod
-    setTimeout(() => document.body.appendChild(mod), 250);
+    hint.style.cssText = `
+        border-radius: 60px;
+        background-color: #000;
+        color: #fff;
+        padding: 2px 5px;
+        z-index: 1003;
+        display: none;
+        user-select: none; 
+    `
+    hint.addEventListener('click', e => e.stopPropagation());
+    return hint
+}
 
-    If = true;
+// window.onmousewheel = document.onmousewheel = scrollFunc;//IE/Opera/Chrome
+// 
+function createImg(data, follow) {
+    const img = document.createElement('img');
 
-
-
-
-    // window.onmousewheel = document.onmousewheel = scrollFunc;//IE/Opera/Chrome
-    // 
-    function createImg(data, follow) {
-        const img = document.createElement('img');
-
-        let cssText = `
+    let cssText = `
         width: 10px;
         height: 10px;
         top: 50%;
         left: 50%;
-        `
-        if (typeof data === 'object') {
-
-            const boundingClientRect = data.getBoundingClientRect()
-            const followCss = `
-    width: ${boundingClientRect.width}px;
-    height: ${boundingClientRect.height}px;
-    top: ${boundingClientRect.top}px;
-    left: ${boundingClientRect.left}px;
-    
-    
     `
-            cssText = follow ? followCss : cssText;
-        }
+    if (typeof data === 'object') {
 
-        img.style.cssText = cssText + `
-            z-index: 1002;
-            position: absolute;
-            cursor: move;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            `
-
-        img.id = "yyz-img"
-        const url = typeof (data) == 'string' ? data : data.src
-        img.src = url;
-        img.draggable = false;//设置pc端不可拖动
-        img.addEventListener('click', e => e.stopPropagation());
-        //图片加载完毕
-        img.onload = function () {
-            //判断那一边是长边
-            const isWidthLonger = (img.offsetWidth / img.offsetHeight) > (div.offsetWidth / div.offsetHeight)
-            const widthLongerCss = `
-            transition: all 0.5s;
-            height: auto;
-            width: ${startZoom * 100}%;
-            left: ${(div.offsetWidth - (div.offsetWidth * startZoom)) / 2}px;
-            top: ${(div.offsetHeight - ((startZoom * div.offsetWidth) * (img.offsetHeight / img.offsetWidth))) / 2}px;
-        `
-
-            const heightLongerCss = `
-            transition: all 0.5s;
-            width: auto;
-            height: ${startZoom * 100}%;
-            top: ${(div.offsetHeight - (div.offsetHeight * startZoom)) / 2}px;
-            left: ${(div.offsetWidth - ((div.offsetHeight * startZoom) * (img.offsetWidth / img.offsetHeight))) / 2}px;
-        `
-            img.style.cssText += isWidthLonger ? widthLongerCss : heightLongerCss;
-
-            setTimeout(function () {
-                img.style.transition = ""
-                imgWidth = img.offsetWidth;
-                imgHeight = img.offsetHeight;
-            }, 500);
-
-        }
-        // pc移动
-        img.onmousedown = event => {
-            event.stopPropagation();
-            let disX = event.clientX - img.offsetLeft;
-            let disY = event.clientY - img.offsetTop;
-            document.onmousemove = (event) => {
-                img.style.left = event.clientX - disX + "px";
-                img.style.top = event.clientY - disY + "px";
-            };
-        };
-        img.onmouseup = () => {
-            document.onmousemove = null;
-        };
-        return img;
+        const boundingClientRect = data.getBoundingClientRect()
+        const followCss = `
+            width: ${boundingClientRect.width}px;
+            height: ${boundingClientRect.height}px;
+            top: ${boundingClientRect.top}px;
+            left: ${boundingClientRect.left}px;
+         `
+        cssText = follow ? followCss : cssText;
     }
-    function createMod() {
-        const mod = document.createElement('div');
 
-        mod.style.cssText = `
-            z-index: 1005;
-            -webkit-tap-highlight-color: transparent;
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 100%;
-            pointer-events: none;
+    img.style.cssText = cssText + `
+        z-index: 1002;
+        position: absolute;
+        cursor: move;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
         `
-        if (hasCloseBox) {
-            // mod.appendChild(createCloseBox())
-            const closeBox = ` <div class="close-box"  onclick="YJIC.close()" style="pointer-events: auto;cursor:pointer; position: absolute;right: 0;top: 0;border-radius: 0 0 0 60px; width: 50px;height: 50px;background-color:rgba(0, 0, 0, .3);"> <div class="close-icon-div" style="width: 14px;height: 14px;padding: 3px; position: absolute;right: 10px;top: 10px;"> <svg t="1616924133328" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2052" width="14" height="14"><path d="M1023.997 114.97 911.408 2.388 516.149 397.629 118.5 0 5.91 112.585l397.649 397.629L7.107 906.648l112.587 112.59 396.454-396.439 395.259 395.249 112.59-112.59L628.738 510.214 1023.997 114.97z" p-id="2053" fill="#ffffff"></path></svg> </div> </div> `
-            mod.innerHTML += closeBox
-        }
-        if (hasActionBox) {
-            const actionBox = `<div style="pointer-events: auto;position: absolute;bottom: 20px;left:0;width: 100%;">
-            <div style="padding: 0 0px; margin: 0 auto;height: 40px;width: 160px;background-color: rgba(0, 0, 0, .3);border-radius: 20px;">
-                <div onclick="YJIC.setAdd()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
-                    <svg t="1616925103431" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10151" width="20" height="20"><path d="M836 476H548V188c0-19.8-16.2-36-36-36s-36 16.2-36 36v288H188c-19.8 0-36 16.2-36 36s16.2 36 36 36h288v288c0 19.8 16.2 36 36 36s36-16.2 36-36V548h288c19.8 0 36-16.2 36-36s-16.2-36-36-36z" p-id="10152" fill="#ffffff"></path></svg>
-                </div>
-                <div onclick="YJIC.setSubtract()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
-                    <svg t="1616925668114" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10948" width="20" height="20"><path d="M725.33 480H298.66c-17.67 0-32 14.33-32 32s14.33 32 32 32h426.67c17.67 0 32-14.33 32-32s-14.32-32-32-32z" p-id="10949" fill="#ffffff"></path></svg>
-                </div>
-                <div onclick="YJIC.rotateRight()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
-                    <svg t="1616925730136" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1951" width="20" height="20"><path d="M503.466667 285.866667L405.333333 226.133333c-8.533333-8.533333-12.8-21.333333-8.533333-29.866666 8.533333-8.533333 21.333333-12.8 29.866667-8.533334l145.066666 89.6c8.533333 4.266667 12.8 17.066667 8.533334 29.866667l-89.6 145.066667c-4.266667 8.533333-17.066667 12.8-29.866667 8.533333-8.533333-4.266667-12.8-17.066667-8.533333-29.866667l64-102.4c-123.733333 4.266667-226.133333 106.666667-226.133334 234.666667s106.666667 234.666667 234.666667 234.666667c85.333333 0 162.133333-46.933333 204.8-119.466667 4.266667-8.533333 17.066667-12.8 29.866667-8.533333 8.533333 4.266667 12.8 17.066667 8.533333 29.866666-51.2 85.333333-140.8 140.8-238.933333 140.8-153.6 0-277.333333-123.733333-277.333334-277.333333 0-145.066667 110.933333-264.533333 251.733334-277.333333z" p-id="1952" fill="#ffffff"></path></svg>
-                </div>
-                <div onclick="YJIC.rotateLeft()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
-                    <svg t="1616925759280" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2144" width="20" height="20"><path d="M520.533333 285.866667c140.8 12.8 251.733333 132.266667 251.733334 277.333333 0 153.6-123.733333 277.333333-277.333334 277.333333-98.133333 0-192-55.466667-238.933333-140.8-4.266667-8.533333-4.266667-21.333333 8.533333-29.866666 8.533333-4.266667 21.333333-4.266667 29.866667 8.533333 42.666667 72.533333 119.466667 119.466667 204.8 119.466667 128 0 234.666667-106.666667 234.666667-234.666667s-98.133333-230.4-226.133334-234.666667l64 102.4c4.266667 8.533333 4.266667 21.333333-8.533333 29.866667-8.533333 4.266667-21.333333 4.266667-29.866667-8.533333l-89.6-145.066667c-4.266667-8.533333-4.266667-21.333333 8.533334-29.866667L597.333333 187.733333c8.533333-4.266667 21.333333-4.266667 29.866667 8.533334 4.266667 8.533333 4.266667 21.333333-8.533333 29.866666l-98.133334 59.733334z" p-id="2145" fill="#ffffff"></path></svg>
-                </div>
+
+    img.id = "yyz-img"
+    const url = typeof (data) == 'string' ? data : data.src
+    img.src = url;
+    img.draggable = false;//设置pc端不可拖动
+    img.addEventListener('click', e => e.stopPropagation());
+    //图片加载完毕
+    img.onload = function () {
+        //判断那一边是长边
+        const isWidthLonger = (img.offsetWidth / img.offsetHeight) > (div.offsetWidth / div.offsetHeight)
+        const widthLongerCss = `
+        transition: all 0.5s;
+        height: auto;
+        width: ${startZoom * 100}%;
+        left: ${(div.offsetWidth - (div.offsetWidth * startZoom)) / 2}px;
+        top: ${(div.offsetHeight - ((startZoom * div.offsetWidth) * (img.offsetHeight / img.offsetWidth))) / 2}px;
+    `
+
+        const heightLongerCss = `
+        transition: all 0.5s;
+        width: auto;
+        height: ${startZoom * 100}%;
+        top: ${(div.offsetHeight - (div.offsetHeight * startZoom)) / 2}px;
+        left: ${(div.offsetWidth - ((div.offsetHeight * startZoom) * (img.offsetWidth / img.offsetHeight))) / 2}px;
+    `
+        img.style.cssText += isWidthLonger ? widthLongerCss : heightLongerCss;
+
+        setTimeout(function () {
+            img.style.transition = ""
+            imgWidth = img.offsetWidth;
+            imgHeight = img.offsetHeight;
+        }, 500);
+
+    }
+    // pc移动
+    img.onmousedown = event => {
+        event.stopPropagation();
+        let disX = event.clientX - img.offsetLeft;
+        let disY = event.clientY - img.offsetTop;
+        document.onmousemove = (event) => {
+            img.style.left = event.clientX - disX + "px";
+            img.style.top = event.clientY - disY + "px";
+        };
+    };
+    img.onmouseup = () => {
+        document.onmousemove = null;
+    };
+    return img;
+}
+function createMod() {
+    const mod = document.createElement('div');
+
+    mod.style.cssText = `
+        z-index: 1005;
+        -webkit-tap-highlight-color: transparent;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 100%;
+        pointer-events: none;
+    `
+    if (hasCloseBox) {
+        // mod.appendChild(createCloseBox())
+        const closeBox = ` <div class="close-box"  onclick="YJIC.close()" style="pointer-events: auto;cursor:pointer; position: absolute;right: 0;top: 0;border-radius: 0 0 0 60px; width: 50px;height: 50px;background-color:rgba(0, 0, 0, .3);"> <div class="close-icon-div" style="width: 14px;height: 14px;padding: 3px; position: absolute;right: 10px;top: 10px;"> <svg t="1616924133328" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2052" width="14" height="14"><path d="M1023.997 114.97 911.408 2.388 516.149 397.629 118.5 0 5.91 112.585l397.649 397.629L7.107 906.648l112.587 112.59 396.454-396.439 395.259 395.249 112.59-112.59L628.738 510.214 1023.997 114.97z" p-id="2053" fill="#ffffff"></path></svg> </div> </div> `
+        mod.innerHTML += closeBox
+    }
+    if (hasActionBox) {
+        const actionBox = `<div style="pointer-events: auto;position: absolute;bottom: 20px;left:0;width: 100%;">
+        <div style="padding: 0 0px; margin: 0 auto;height: 40px;width: 160px;background-color: rgba(0, 0, 0, .3);border-radius: 20px;">
+            <div onclick="YJIC.setAdd()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+                <svg t="1616925103431" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10151" width="20" height="20"><path d="M836 476H548V188c0-19.8-16.2-36-36-36s-36 16.2-36 36v288H188c-19.8 0-36 16.2-36 36s16.2 36 36 36h288v288c0 19.8 16.2 36 36 36s36-16.2 36-36V548h288c19.8 0 36-16.2 36-36s-16.2-36-36-36z" p-id="10152" fill="#ffffff"></path></svg>
             </div>
-        </div>`
-            mod.innerHTML += actionBox;
-        }
-        return mod
+            <div onclick="YJIC.setSubtract()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+                <svg t="1616925668114" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10948" width="20" height="20"><path d="M725.33 480H298.66c-17.67 0-32 14.33-32 32s14.33 32 32 32h426.67c17.67 0 32-14.33 32-32s-14.32-32-32-32z" p-id="10949" fill="#ffffff"></path></svg>
+            </div>
+            <div onclick="YJIC.rotateRight()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+                <svg t="1616925730136" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1951" width="20" height="20"><path d="M503.466667 285.866667L405.333333 226.133333c-8.533333-8.533333-12.8-21.333333-8.533333-29.866666 8.533333-8.533333 21.333333-12.8 29.866667-8.533334l145.066666 89.6c8.533333 4.266667 12.8 17.066667 8.533334 29.866667l-89.6 145.066667c-4.266667 8.533333-17.066667 12.8-29.866667 8.533333-8.533333-4.266667-12.8-17.066667-8.533333-29.866667l64-102.4c-123.733333 4.266667-226.133333 106.666667-226.133334 234.666667s106.666667 234.666667 234.666667 234.666667c85.333333 0 162.133333-46.933333 204.8-119.466667 4.266667-8.533333 17.066667-12.8 29.866667-8.533333 8.533333 4.266667 12.8 17.066667 8.533333 29.866666-51.2 85.333333-140.8 140.8-238.933333 140.8-153.6 0-277.333333-123.733333-277.333334-277.333333 0-145.066667 110.933333-264.533333 251.733334-277.333333z" p-id="1952" fill="#ffffff"></path></svg>
+            </div>
+            <div onclick="YJIC.rotateLeft()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+                <svg t="1616925759280" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2144" width="20" height="20"><path d="M520.533333 285.866667c140.8 12.8 251.733333 132.266667 251.733334 277.333333 0 153.6-123.733333 277.333333-277.333334 277.333333-98.133333 0-192-55.466667-238.933333-140.8-4.266667-8.533333-4.266667-21.333333 8.533333-29.866666 8.533333-4.266667 21.333333-4.266667 29.866667 8.533333 42.666667 72.533333 119.466667 119.466667 204.8 119.466667 128 0 234.666667-106.666667 234.666667-234.666667s-98.133333-230.4-226.133334-234.666667l64 102.4c4.266667 8.533333 4.266667 21.333333-8.533333 29.866667-8.533333 4.266667-21.333333 4.266667-29.866667-8.533333l-89.6-145.066667c-4.266667-8.533333-4.266667-21.333333 8.533334-29.866667L597.333333 187.733333c8.533333-4.266667 21.333333-4.266667 29.866667 8.533334 4.266667 8.533333 4.266667 21.333333-8.533333 29.866666l-98.133334 59.733334z" p-id="2145" fill="#ffffff"></path></svg>
+            </div>
+        </div>
+    </div>`
+        mod.innerHTML += actionBox;
     }
-    /**
-     * 计算两个触点的位置
-     * @param touch1 第一个触点
-     * @param touch2 第二个触点
-     */
-    function getDst(touch1, touch2) {
-        //计算两个直角边的长度
-        let x = touch2.clientX - touch1.clientX; //水平方向的距离
-        let y = touch2.clientY - touch1.clientY; //垂直方向的距离
-        //利用勾股定理，计算两个触点的距离（斜边的长度）
-        let z = Math.sqrt(x * x + y * y);
-        // 返回结果
-        return z;
-    }
+    return mod
+}
+/**
+ * 计算两个触点的位置
+ * @param touch1 第一个触点
+ * @param touch2 第二个触点
+ */
+function getDst(touch1, touch2) {
+    //计算两个直角边的长度
+    let x = touch2.clientX - touch1.clientX; //水平方向的距离
+    let y = touch2.clientY - touch1.clientY; //垂直方向的距离
+    //利用勾股定理，计算两个触点的距离（斜边的长度）
+    let z = Math.sqrt(x * x + y * y);
+    // 返回结果
+    return z;
+}
 
-    /**
-     * 计算两个触点的夹角（水平辅助线）的角度
-     * @param touch1 第一个触点
-     * @param touch2 第二个触点
-     */
-    function getDeg(touch1, touch2) {
-        //计算两个触点的距离，两个直角边长度
-        let x = touch2.clientX - touch1.clientX; //临边
-        let y = touch2.clientY - touch1.clientY; //对边
-        //根据两个直角边比例 tan，计算角度
-        let angle = Math.atan2(y, x); //是个弧度
-        //根据弧度计算角度
-        let deg = angle / Math.PI * 180;
-        //返回角度
-        return deg;
-    }
+/**
+ * 计算两个触点的夹角（水平辅助线）的角度
+ * @param touch1 第一个触点
+ * @param touch2 第二个触点
+ */
+function getDeg(touch1, touch2) {
+    //计算两个触点的距离，两个直角边长度
+    let x = touch2.clientX - touch1.clientX; //临边
+    let y = touch2.clientY - touch1.clientY; //对边
+    //根据两个直角边比例 tan，计算角度
+    let angle = Math.atan2(y, x); //是个弧度
+    //根据弧度计算角度
+    let deg = angle / Math.PI * 180;
+    //返回角度
+    return deg;
+}
 
-    /**
-     * 计算两个触点的中点
-     * @param touch1 第一个触点
-     * @param touch2 第二个触点
-     */
-    function getZhong(touch1, touch2) {
-        let dd = {};
-        dd.x = Math.abs(touch2.clientX + touch1.clientX) / 2; //水平方向的距离
-        dd.y = Math.abs(touch2.clientY + touch1.clientY) / 2; //垂直方向的距离
-        // 返回结果
-        return dd;
-    }
+/**
+ * 计算两个触点的中点
+ * @param touch1 第一个触点
+ * @param touch2 第二个触点
+ */
+function getZhong(touch1, touch2) {
+    let dd = {};
+    dd.x = Math.abs(touch2.clientX + touch1.clientX) / 2; //水平方向的距离
+    dd.y = Math.abs(touch2.clientY + touch1.clientY) / 2; //垂直方向的距离
+    // 返回结果
+    return dd;
 }
 
 
 
 //下面适配pc
 let scrollFunc = function (e) {
-    if (!If) {
+    if (!isListenWheel) {
         return;
     }
     e = e || window.event;
@@ -610,7 +608,7 @@ function close() {
     if (backCallback != null) {
         backCallback();
     }
-    If = false
+    isListenWheel = false
     // mod.remove();
     mod.parentNode.removeChild(mod);
     // alert()
