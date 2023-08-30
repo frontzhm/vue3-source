@@ -8,6 +8,8 @@
  * @param {Boolean} hasCloseBox 是否有关闭按钮,默认为true
  * @param {Boolean} hasActionBox 是否有操作按钮,默认为true
  * @param {Boolean} hasAnimateWhenIsImgEl 当传入值是el是否有动画,默认为false
+ * @param {Function} afterCloseCallback 关闭之后的回调
+ * @param {Function} afterScaleCallback 改变尺寸之后的回调
  */
 const defaultOptions = {
     isListenWheel: false, // 是否监听滚轮事件,默认不监听
@@ -23,6 +25,7 @@ const defaultOptions = {
 }
 /**
  * previewImage预览图片
+ * 主要在body里插入两个层，一个是图片层，一个操作层，操作层没有背景色，所以可以穿透
  * @param {String|Element} urlOrImgEl 图片的url或者img元素
  * @param {Object} options 配置参数
  * @param {Boolean} options.isListenWheel 是否监听滚轮事件,默认不监听
@@ -32,11 +35,12 @@ const defaultOptions = {
  * @param {Boolean} options.hasCloseBox 是否有关闭按钮,默认为true
  * @param {Boolean} options.hasActionBox 是否有操作按钮,默认为true
  * @param {Boolean} options.hasAnimateWhenIsImgEl 当传入值是el是否有动画,默认为false
-
+ * @param {Function} options.afterCloseCallback 关闭之后的回调
+ * @param {Function} options.afterScaleCallback 改变尺寸之后的回调
  */
 function previewImage(urlOrImgEl, options = {}) {
     options = { ...defaultOptions, ...options }
-    
+
     let scale = 1.0; // 缩放的比例
     let deg = 0; // 旋转的角度
     let layerImage = null;
@@ -55,6 +59,8 @@ function previewImage(urlOrImgEl, options = {}) {
         let box = document.getElementById("yyz-img-zoom");
         box && box.remove();
         layerImage = createLayerImage(options.isClickShadeClose)
+       
+        
         document.body.appendChild(layerImage);
         //要延时一点点时间
         setTimeout(function () {
@@ -78,7 +84,6 @@ function previewImage(urlOrImgEl, options = {}) {
     }
 
     function createLayerImage(isClickShadeClose = true) {
-
         const layerImageEl = document.createElement('div'); //1、创建元素
         layerImageEl.id = "yyz-img-zoom";   //id
         layerImageEl.style.cssText = `
@@ -322,22 +327,22 @@ function previewImage(urlOrImgEl, options = {}) {
     `
         if (hasCloseBox) {
             // layerActionEl.appendChild(createCloseBox())
-            const closeBox = ` <div class="close-box"  onclick="YJIC.close()" style="pointer-events: auto;cursor:pointer; position: absolute;right: 0;top: 0;border-radius: 0 0 0 60px; width: 50px;height: 50px;background-color:rgba(0, 0, 0, .3);"> <div class="close-icon-div" style="width: 14px;height: 14px;padding: 3px; position: absolute;right: 10px;top: 10px;"> <svg t="1616924133328" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2052" width="14" height="14"><path d="M1023.997 114.97 911.408 2.388 516.149 397.629 118.5 0 5.91 112.585l397.649 397.629L7.107 906.648l112.587 112.59 396.454-396.439 395.259 395.249 112.59-112.59L628.738 510.214 1023.997 114.97z" p-id="2053" fill="#ffffff"></path></svg> </div> </div> `
+            const closeBox = ` <div class="close-box"  onclick="previewImage.close()" style="pointer-events: auto;cursor:pointer; position: absolute;right: 0;top: 0;border-radius: 0 0 0 60px; width: 50px;height: 50px;background-color:rgba(0, 0, 0, .3);"> <div class="close-icon-div" style="width: 14px;height: 14px;padding: 3px; position: absolute;right: 10px;top: 10px;"> <svg t="1616924133328" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2052" width="14" height="14"><path d="M1023.997 114.97 911.408 2.388 516.149 397.629 118.5 0 5.91 112.585l397.649 397.629L7.107 906.648l112.587 112.59 396.454-396.439 395.259 395.249 112.59-112.59L628.738 510.214 1023.997 114.97z" p-id="2053" fill="#ffffff"></path></svg> </div> </div> `
             layerActionEl.innerHTML += closeBox
         }
         if (hasActionBox) {
             const actionBox = `<div style="pointer-events: auto;position: absolute;bottom: 20px;left:0;width: 100%;">
         <div style="padding: 0 0px; margin: 0 auto;height: 40px;width: 160px;background-color: rgba(0, 0, 0, .3);border-radius: 20px;">
-            <div onclick="YJIC.upScale()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+            <div onclick="previewImage.upScale()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
                 <svg t="1616925103431" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10151" width="20" height="20"><path d="M836 476H548V188c0-19.8-16.2-36-36-36s-36 16.2-36 36v288H188c-19.8 0-36 16.2-36 36s16.2 36 36 36h288v288c0 19.8 16.2 36 36 36s36-16.2 36-36V548h288c19.8 0 36-16.2 36-36s-16.2-36-36-36z" p-id="10152" fill="#ffffff"></path></svg>
             </div>
-            <div onclick="YJIC.downScale()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+            <div onclick="previewImage.downScale()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
                 <svg t="1616925668114" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10948" width="20" height="20"><path d="M725.33 480H298.66c-17.67 0-32 14.33-32 32s14.33 32 32 32h426.67c17.67 0 32-14.33 32-32s-14.32-32-32-32z" p-id="10949" fill="#ffffff"></path></svg>
             </div>
-            <div onclick="YJIC.rotateRight()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+            <div onclick="previewImage.rotateRight()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
                 <svg t="1616925730136" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1951" width="20" height="20"><path d="M503.466667 285.866667L405.333333 226.133333c-8.533333-8.533333-12.8-21.333333-8.533333-29.866666 8.533333-8.533333 21.333333-12.8 29.866667-8.533334l145.066666 89.6c8.533333 4.266667 12.8 17.066667 8.533334 29.866667l-89.6 145.066667c-4.266667 8.533333-17.066667 12.8-29.866667 8.533333-8.533333-4.266667-12.8-17.066667-8.533333-29.866667l64-102.4c-123.733333 4.266667-226.133333 106.666667-226.133334 234.666667s106.666667 234.666667 234.666667 234.666667c85.333333 0 162.133333-46.933333 204.8-119.466667 4.266667-8.533333 17.066667-12.8 29.866667-8.533333 8.533333 4.266667 12.8 17.066667 8.533333 29.866666-51.2 85.333333-140.8 140.8-238.933333 140.8-153.6 0-277.333333-123.733333-277.333334-277.333333 0-145.066667 110.933333-264.533333 251.733334-277.333333z" p-id="1952" fill="#ffffff"></path></svg>
             </div>
-            <div onclick="YJIC.rotateLeft()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+            <div onclick="previewImage.rotateLeft()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
                 <svg t="1616925759280" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2144" width="20" height="20"><path d="M520.533333 285.866667c140.8 12.8 251.733333 132.266667 251.733334 277.333333 0 153.6-123.733333 277.333333-277.333334 277.333333-98.133333 0-192-55.466667-238.933333-140.8-4.266667-8.533333-4.266667-21.333333 8.533333-29.866666 8.533333-4.266667 21.333333-4.266667 29.866667 8.533333 42.666667 72.533333 119.466667 119.466667 204.8 119.466667 128 0 234.666667-106.666667 234.666667-234.666667s-98.133333-230.4-226.133334-234.666667l64 102.4c4.266667 8.533333 4.266667 21.333333-8.533333 29.866667-8.533333 4.266667-21.333333 4.266667-29.866667-8.533333l-89.6-145.066667c-4.266667-8.533333-4.266667-21.333333 8.533334-29.866667L597.333333 187.733333c8.533333-4.266667 21.333333-4.266667 29.866667 8.533334 4.266667 8.533333 4.266667 21.333333-8.533333 29.866666l-98.133334 59.733334z" p-id="2145" fill="#ffffff"></path></svg>
             </div>
         </div>
@@ -602,7 +607,7 @@ function previewImage(urlOrImgEl, options = {}) {
     function setSizeCallback(call) {
         sizeCallback = call;
     }
-    
+
 
     /**
      * 关闭
@@ -623,47 +628,12 @@ function previewImage(urlOrImgEl, options = {}) {
             setTimeout(() => layerImage.parentNode.removeChild(layerImage), 200);
         })();
     }
-    
 
 
-    //  export  const popImg = {
-    //     popImg,
-    //     setStartZoom,
-    //     setHintTime,
-    //     setBgc,
-    //     setDegIf,
-    //     setBackCallback,
-    //     setCloseIf,
-    //     setHandleIf,
-    //     close,
-    //     upScale,
-    //     downScale,
-    //     rotateLeft,
-    //     rotateRight
-    //   }
-    const YJIC = {
-        popImg,
-        // setStartZoom,
-        // setHintTime,
-        // setBgc,
-        // setDegIf,
-        // setBackCallback,
-        // setCloseIf,
-        // setHandleIf,
-        close,
-        upScale,
-        downScale,
-        rotateLeft,
-        rotateRight
-    };
 
-
-    //   YJIC.close = close;
-    //   YJIC.upScale = upScale;
-    //   YJIC.downScale = downScale;
-    //   YJIC.rotateLeft = rotateLeft;
-    //   YJIC.rotateRight = rotateRight;
-
-    //   暴露
-    (window).YJIC = YJIC;
+    previewImage.close = close;
+    previewImage.upScale = upScale;
+    previewImage.downScale = downScale;
+    previewImage.rotateLeft = rotateLeft;
+    previewImage.rotateRight = rotateRight;
 }
