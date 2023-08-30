@@ -17,6 +17,9 @@ const defaultOptions = {
     hasCloseBox: true, // 是否有关闭按钮,默认为true
     hasActionBox: true, // 是否有操作按钮,默认为true
     hasAnimateWhenIsImgEl: false, // 当传入值是el是否有动画,默认为false
+    afterCloseCallback: null, // 关闭之后的回调
+    afterScaleCallback: null, // 改变尺寸之后的回调
+
 }
 /**
  * previewImage预览图片
@@ -97,7 +100,7 @@ function previewImage(urlOrImgEl, options = {}) {
         //手势开始
         layerImageEl.addEventListener('touchstart', (event) => handleTouchStart(event));
         // 手势移动
-        layerImageEl.addEventListener('touchmove', (event) => handleTouchMove(event, { sizeCallback, hintPopup, }));
+        layerImageEl.addEventListener('touchmove', (event) => handleTouchMove(event));
         // 手势结束
         layerImageEl.addEventListener('touchend', (event) => handleTouchEnd(event));
 
@@ -153,10 +156,10 @@ function previewImage(urlOrImgEl, options = {}) {
             //阻止浏览器默认行为
             event.preventDefault();
         }
-        function handleTouchMove(event, { sizeCallback, hintPopup }) {
+        function handleTouchMove(event) {
             const img = imgMiddle
             //旋转 
-            let canRotate = false;
+            let canRotateTwoFinger = false;
 
             if (event.touches.length >= 2) {
                 // 计算当前两个触点的距离
@@ -165,7 +168,7 @@ function previewImage(urlOrImgEl, options = {}) {
                 // 计算当前两个触点的距离 和 两个触点的初始距离 的 比例,最小值是0.1
                 scale = Math.max(currentDst / startDst, 0.1);
                 // 回调 
-                sizeCallback && sizeCallback(scale);
+                options.sizeCallback && options.sizeCallback(scale);
                 // 弹出提示
                 hintPopup(Math.round(scale * 100) + "%");
 
@@ -184,7 +187,7 @@ function previewImage(urlOrImgEl, options = {}) {
                 img.style.left = startLeft - ((newW - startWidth) * startCentreX) + zleft + 'px';
 
 
-                if (canRotate) {
+                if (canRotateTwoFinger) {
                     let currentDeg = getDeg(event.touches[0], event.touches[1]);
                     deg = currentDeg - startDeg;
                     // img.style.transformOrigin = startCentreX * 100 +'%, '+startCentreY * 100 +'%';
@@ -225,8 +228,6 @@ function previewImage(urlOrImgEl, options = {}) {
         return hintEl
     }
 
-    // window.onmousewheel = document.onmousewheel = scrollFunc;//IE/Opera/Chrome
-    // 
     function createImgMiddle(urlOrImgEl, hasAnimateWhenIsImgEl, { startZoom = 1 }) {
         // let startZoom = 1;
         const imgEl = document.createElement('img');
@@ -307,9 +308,9 @@ function previewImage(urlOrImgEl, options = {}) {
     }
     function createLayerAction(options) {
         const { hasCloseBox, hasActionBox } = options
-        const modEl = document.createElement('div');
+        const layerActionEl = document.createElement('div');
 
-        modEl.style.cssText = `
+        layerActionEl.style.cssText = `
         z-index: 1005;
         -webkit-tap-highlight-color: transparent;
         position: fixed;
@@ -320,17 +321,17 @@ function previewImage(urlOrImgEl, options = {}) {
         pointer-events: none;
     `
         if (hasCloseBox) {
-            // modEl.appendChild(createCloseBox())
+            // layerActionEl.appendChild(createCloseBox())
             const closeBox = ` <div class="close-box"  onclick="YJIC.close()" style="pointer-events: auto;cursor:pointer; position: absolute;right: 0;top: 0;border-radius: 0 0 0 60px; width: 50px;height: 50px;background-color:rgba(0, 0, 0, .3);"> <div class="close-icon-div" style="width: 14px;height: 14px;padding: 3px; position: absolute;right: 10px;top: 10px;"> <svg t="1616924133328" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2052" width="14" height="14"><path d="M1023.997 114.97 911.408 2.388 516.149 397.629 118.5 0 5.91 112.585l397.649 397.629L7.107 906.648l112.587 112.59 396.454-396.439 395.259 395.249 112.59-112.59L628.738 510.214 1023.997 114.97z" p-id="2053" fill="#ffffff"></path></svg> </div> </div> `
-            modEl.innerHTML += closeBox
+            layerActionEl.innerHTML += closeBox
         }
         if (hasActionBox) {
             const actionBox = `<div style="pointer-events: auto;position: absolute;bottom: 20px;left:0;width: 100%;">
         <div style="padding: 0 0px; margin: 0 auto;height: 40px;width: 160px;background-color: rgba(0, 0, 0, .3);border-radius: 20px;">
-            <div onclick="YJIC.setAdd()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+            <div onclick="YJIC.upScale()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
                 <svg t="1616925103431" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10151" width="20" height="20"><path d="M836 476H548V188c0-19.8-16.2-36-36-36s-36 16.2-36 36v288H188c-19.8 0-36 16.2-36 36s16.2 36 36 36h288v288c0 19.8 16.2 36 36 36s36-16.2 36-36V548h288c19.8 0 36-16.2 36-36s-16.2-36-36-36z" p-id="10152" fill="#ffffff"></path></svg>
             </div>
-            <div onclick="YJIC.setSubtract()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
+            <div onclick="YJIC.downScale()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
                 <svg t="1616925668114" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10948" width="20" height="20"><path d="M725.33 480H298.66c-17.67 0-32 14.33-32 32s14.33 32 32 32h426.67c17.67 0 32-14.33 32-32s-14.32-32-32-32z" p-id="10949" fill="#ffffff"></path></svg>
             </div>
             <div onclick="YJIC.rotateRight()" onMouseOver="this.style.backgroundColor='rgba(0, 0, 0, .6)'" onMouseOut="this.style.backgroundColor=''" style="border-radius: 20px;width: 20px; height: 20px; padding: 10px;float: left;cursor:pointer;">
@@ -341,9 +342,9 @@ function previewImage(urlOrImgEl, options = {}) {
             </div>
         </div>
     </div>`
-            modEl.innerHTML += actionBox;
+            layerActionEl.innerHTML += actionBox;
         }
-        return modEl
+        return layerActionEl
     }
     /**
      * 计算两个触点的位置
@@ -475,7 +476,7 @@ function previewImage(urlOrImgEl, options = {}) {
      * 放大
      * @param {*} e 
      */
-    function setAdd(e) {
+    function upScale(e) {
         //取消事件冒泡 
         if (e && e.stopPropagation)
             e.stopPropagation();
@@ -488,7 +489,7 @@ function previewImage(urlOrImgEl, options = {}) {
      * @param {*} e 
      */
 
-    function setSubtract(e) {
+    function downScale(e) {
         //取消事件冒泡 
         if (e && e.stopPropagation)
             e.stopPropagation();
@@ -601,14 +602,7 @@ function previewImage(urlOrImgEl, options = {}) {
     function setSizeCallback(call) {
         sizeCallback = call;
     }
-    let backCallback = null;
-    /**
-     * 设置关闭回调
-     * @param {*} call 
-     */
-    function setBackCallback(call) {
-        backCallback = call;
-    }
+    
 
     /**
      * 关闭
@@ -617,6 +611,7 @@ function previewImage(urlOrImgEl, options = {}) {
         if (layerImage == null) {
             return
         }
+        options.afterCloseCallback && options.afterCloseCallback();
 
         options.isListenWheel = false
         // 移除操作层
@@ -628,43 +623,7 @@ function previewImage(urlOrImgEl, options = {}) {
             setTimeout(() => layerImage.parentNode.removeChild(layerImage), 200);
         })();
     }
-    /**
-     * 设置遮罩颜色 可以设置成 rgba(0,0,0,0) 透明
-     * @param {color} color 
-     */
-    // function setBgc(color) {
-    //     colorMask = color;
-    // }
-
-    /**
-     * 设置手机两指是否可以旋转
-     * @param {boolean} bool 
-     */
-    // function setDegIf(bool) {
-    //     canRotate = bool;
-    // }
-    /**
-     * 设置点击遮罩是否关闭, 只在pc端有效 因为手机端背景用来监听了手势
-     * @param {boolean} bool 
-     */
-    function setShadeClose(bool) {
-        isClickShadeClose = bool;
-    }
-
-    /**
-     * 设置右上角的关闭按钮是否显示
-     * @param {boolean} bool 
-     */
-    function setCloseIf(bool) {
-        hasCloseBox = bool;
-    }
-    /**
-    * 设置操作的按钮组是否显示
-    * @param {boolean} bool 
-    */
-    function setHandleIf(bool) {
-        hasActionBox = bool;
-    }
+    
 
 
     //  export  const popImg = {
@@ -673,13 +632,12 @@ function previewImage(urlOrImgEl, options = {}) {
     //     setHintTime,
     //     setBgc,
     //     setDegIf,
-    //     setShadeClose,
     //     setBackCallback,
     //     setCloseIf,
     //     setHandleIf,
     //     close,
-    //     setAdd,
-    //     setSubtract,
+    //     upScale,
+    //     downScale,
     //     rotateLeft,
     //     rotateRight
     //   }
@@ -689,21 +647,20 @@ function previewImage(urlOrImgEl, options = {}) {
         // setHintTime,
         // setBgc,
         // setDegIf,
-        setShadeClose,
-        setBackCallback,
-        setCloseIf,
-        setHandleIf,
+        // setBackCallback,
+        // setCloseIf,
+        // setHandleIf,
         close,
-        setAdd,
-        setSubtract,
+        upScale,
+        downScale,
         rotateLeft,
         rotateRight
     };
 
 
     //   YJIC.close = close;
-    //   YJIC.setAdd = setAdd;
-    //   YJIC.setSubtract = setSubtract;
+    //   YJIC.upScale = upScale;
+    //   YJIC.downScale = downScale;
     //   YJIC.rotateLeft = rotateLeft;
     //   YJIC.rotateRight = rotateRight;
 
