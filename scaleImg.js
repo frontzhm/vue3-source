@@ -1,13 +1,36 @@
 // @ts-nocheck
+/**
+ * defaultOptions 的参数
+ * @param {Boolean} isListenWheel 是否监听滚轮事件,默认不监听
+ * @param {Number} startZoom 缩放比例，默认值为1，表示不缩放
+ * @param {Boolean} isClickShadeClose 是否点击遮罩层关闭,默认为true
+ * @param {String} colorMask 遮罩层的颜色,默认为rgba(0,0,0,.7)
+ * @param {Boolean} hasCloseBox 是否有关闭按钮,默认为true
+ * @param {Boolean} hasActionBox 是否有操作按钮,默认为true
+ * @param {Boolean} hasAnimateWhenIsImgEl 当传入值是el是否有动画,默认为false
+ */
 const defaultOptions = {
-    isListenWheel: false,
-    startZoom: 1,
-    isClickShadeClose: true,
-    colorMask: 'rgba(0,0,0,.7)',
-    hasCloseBox: true,
-    hasActionBox: true,
-    hasAnimateWhenIsImgEl: false,
+    isListenWheel: false, // 是否监听滚轮事件,默认不监听
+    startZoom: 1, // 缩放比例，默认值为1，表示不缩放
+    isClickShadeClose: true, // 是否点击遮罩层关闭,默认为true
+    colorMask: 'rgba(0,0,0,.7)', // 遮罩层的颜色,默认为rgba(0,0,0,.7)
+    hasCloseBox: true, // 是否有关闭按钮,默认为true
+    hasActionBox: true, // 是否有操作按钮,默认为true
+    hasAnimateWhenIsImgEl: false, // 当传入值是el是否有动画,默认为false
 }
+/**
+ * previewImage预览图片
+ * @param {String|Element} urlOrImgEl 图片的url或者img元素
+ * @param {Object} options 配置参数
+ * @param {Boolean} options.isListenWheel 是否监听滚轮事件,默认不监听
+ * @param {Number} options.startZoom 缩放比例，默认值为1，表示不缩放
+ * @param {Boolean} options.isClickShadeClose 是否点击遮罩层关闭,默认为true
+ * @param {String} options.colorMask 遮罩层的颜色,默认为rgba(0,0,0,.7)
+ * @param {Boolean} options.hasCloseBox 是否有关闭按钮,默认为true
+ * @param {Boolean} options.hasActionBox 是否有操作按钮,默认为true
+ * @param {Boolean} options.hasAnimateWhenIsImgEl 当传入值是el是否有动画,默认为false
+
+ */
 function previewImage(urlOrImgEl, options = {}) {
     options = { ...defaultOptions, ...options }
     
@@ -19,8 +42,8 @@ function previewImage(urlOrImgEl, options = {}) {
     let imgMiddle = null;
 
     //图片的高度和宽度
-    let imgWidth
-    let imgHeight
+    let imgMiddleWidth
+    let imgMiddleHeight
 
     popImg(urlOrImgEl, options.hasAnimateWhenIsImgEl);
 
@@ -115,8 +138,8 @@ function previewImage(urlOrImgEl, options = {}) {
                 startZhong = getZhong(event.touches[0], event.touches[1]);
 
                 //开始的宽高
-                startHeigh = scale * imgHeight;
-                startWidth = scale * imgWidth;
+                startHeigh = scale * imgMiddleHeight;
+                startWidth = scale * imgMiddleWidth;
 
                 //计算两触点 中点 在图片上的比例
                 startCentreY = (startZhong.y - startTop) / startHeigh;
@@ -146,8 +169,8 @@ function previewImage(urlOrImgEl, options = {}) {
                 // 弹出提示
                 hintPopup(Math.round(scale * 100) + "%");
 
-                let newW = scale * imgWidth;
-                let newH = scale * imgHeight;
+                let newW = scale * imgMiddleWidth;
+                let newH = scale * imgMiddleHeight;
                 //按照比例进行缩放
                 img.style.width = newW + 'px';
                 img.style.height = newH + 'px';
@@ -262,8 +285,8 @@ function previewImage(urlOrImgEl, options = {}) {
 
             setTimeout(function () {
                 imgEl.style.transition = ""
-                imgWidth = imgEl.offsetWidth;
-                imgHeight = imgEl.offsetHeight;
+                imgMiddleWidth = imgEl.offsetWidth;
+                imgMiddleHeight = imgEl.offsetHeight;
             }, 500);
 
         }
@@ -399,8 +422,8 @@ function previewImage(urlOrImgEl, options = {}) {
         //弹出提示
         hintPopup(Math.round(scale * 100) + "%");
 
-        let newW = scale * imgWidth;
-        let newH = scale * imgHeight;
+        let newW = scale * imgMiddleWidth;
+        let newH = scale * imgMiddleHeight;
         const img = imgMiddle
         //旧的高度
         let oldH = img.offsetHeight;
@@ -527,8 +550,8 @@ function previewImage(urlOrImgEl, options = {}) {
         }
         hintPopup(Math.round(scale * 100) + "%");
 
-        let newW = scale * imgWidth;
-        let newH = scale * imgHeight;
+        let newW = scale * imgMiddleWidth;
+        let newH = scale * imgMiddleHeight;
         const img = imgMiddle
         //旧的高度
         let oldH = img.offsetHeight;
