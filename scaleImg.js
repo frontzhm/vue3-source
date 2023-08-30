@@ -40,7 +40,7 @@ function previewImage(urlOrImgEl, options = {}) {
     popImg(urlOrImgEl, options.hasAnimateWhenIsImgEl);
 
     function popImg(urlOrImgEl, hasAnimateWhenIsImgEl = false) {
-        
+
         let box = document.getElementById("yyz-img-zoom");
         box && box.remove();
         layerImage = createZoomBox(options.isClickShadeClose)
@@ -67,6 +67,35 @@ function previewImage(urlOrImgEl, options = {}) {
     }
 
     function createZoomBox(isClickShadeClose = true) {
+
+        const zoomBoxEl = document.createElement('div'); //1、创建元素
+        zoomBoxEl.id = "yyz-img-zoom";   //id
+        zoomBoxEl.style.cssText = `
+        width: 100%;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        background: rgba(0,0,0,0);
+        transition: background 0.5s;
+        z-index: 1001;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    `
+
+        isClickShadeClose && zoomBoxEl.addEventListener('click', close);
+        const { handleTouchStart, handleTouchMove, handleTouchEnd } = handleTouch()
+        //手势开始
+        zoomBoxEl.addEventListener('touchstart', (event) => handleTouchStart(event));
+        // 手势移动
+        zoomBoxEl.addEventListener('touchmove', (event) => handleTouchMove(event, { sizeCallback, hintPopup, }));
+        // 手势结束
+        zoomBoxEl.addEventListener('touchend', (event) => handleTouchEnd(event));
+
+        return zoomBoxEl
+    }
+    function handleTouch() {
 
         //开始的移动的坐标
         let startX;
@@ -170,31 +199,7 @@ function previewImage(urlOrImgEl, options = {}) {
                 startLeft = img.offsetLeft;
             }
         }
-        const zoomBoxEl = document.createElement('div'); //1、创建元素
-        zoomBoxEl.id = "yyz-img-zoom";   //id
-        zoomBoxEl.style.cssText = `
-        width: 100%;
-        height: 100vh;
-        position: fixed;
-        left: 0;
-        top: 0;
-        background: rgba(0,0,0,0);
-        transition: background 0.5s;
-        z-index: 1001;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    `
-
-        isClickShadeClose && zoomBoxEl.addEventListener('click', close);
-        //手势开始
-        zoomBoxEl.addEventListener('touchstart', (event) => handleTouchStart(event));
-        // 手势移动
-        zoomBoxEl.addEventListener('touchmove', (event) => handleTouchMove(event, { sizeCallback, hintPopup, }));
-        // 手势结束
-        zoomBoxEl.addEventListener('touchend', (event) => handleTouchEnd(event));
-
-        return zoomBoxEl
+        return { handleTouchStart, handleTouchMove, handleTouchEnd }
     }
     function createHint() {
         const hintEl = document.createElement('div'); //1、创建元素
