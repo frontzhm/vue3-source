@@ -1,13 +1,5 @@
 // @ts-nocheck
 const defaultOptions = {
-    //缩放的比例
-    scale: 1.0,
-    //旋转的角度
-    deg: 0,
-    layerImage: null,
-    hint: null,
-    img: null,
-    mod: null,
     isListenWheel: false,
     startZoom: 1,
     isClickShadeClose: true,
@@ -18,20 +10,13 @@ const defaultOptions = {
 }
 function previewImage(urlOrImgEl, options = {}) {
     options = { ...defaultOptions, ...options }
-    //缩放的比例
-    // scale: 1.0,
-    // //旋转的角度
-    // deg: 0,
-    // layerImage: null,
-    // hint: null,
-    // img: null,
-    // mod: null,
+    
     let scale = 1.0; // 缩放的比例
     let deg = 0; // 旋转的角度
     let layerImage = null;
+    let layerAction = null;
     let hint = null;
     let imgMiddle = null;
-    let mod = null;
 
     //图片的高度和宽度
     let imgWidth
@@ -43,7 +28,7 @@ function previewImage(urlOrImgEl, options = {}) {
 
         let box = document.getElementById("yyz-img-zoom");
         box && box.remove();
-        layerImage = createZoomBox(options.isClickShadeClose)
+        layerImage = createLayerImage(options.isClickShadeClose)
         document.body.appendChild(layerImage);
         //要延时一点点时间
         setTimeout(function () {
@@ -55,22 +40,22 @@ function previewImage(urlOrImgEl, options = {}) {
         layerImage.appendChild(hint);
 
         // 中间的图片
-        imgMiddle = createImg(urlOrImgEl, hasAnimateWhenIsImgEl, options)
+        imgMiddle = createImgMiddle(urlOrImgEl, hasAnimateWhenIsImgEl, options)
         layerImage.appendChild(imgMiddle);
 
         // 关闭和中间放大缩小旋转 操作层
-        layerAction = createMod(options)
+        layerAction = createLayerAction(options)
         //要延时一点点时间 显示 layerAction
         setTimeout(() => document.body.appendChild(layerAction), 250);
         options.isListenWheel = true;
 
     }
 
-    function createZoomBox(isClickShadeClose = true) {
+    function createLayerImage(isClickShadeClose = true) {
 
-        const zoomBoxEl = document.createElement('div'); //1、创建元素
-        zoomBoxEl.id = "yyz-img-zoom";   //id
-        zoomBoxEl.style.cssText = `
+        const layerImageEl = document.createElement('div'); //1、创建元素
+        layerImageEl.id = "yyz-img-zoom";   //id
+        layerImageEl.style.cssText = `
         width: 100%;
         height: 100vh;
         position: fixed;
@@ -84,16 +69,16 @@ function previewImage(urlOrImgEl, options = {}) {
         align-items: center;
     `
 
-        isClickShadeClose && zoomBoxEl.addEventListener('click', close);
+        isClickShadeClose && layerImageEl.addEventListener('click', close);
         const { handleTouchStart, handleTouchMove, handleTouchEnd } = handleTouch()
         //手势开始
-        zoomBoxEl.addEventListener('touchstart', (event) => handleTouchStart(event));
+        layerImageEl.addEventListener('touchstart', (event) => handleTouchStart(event));
         // 手势移动
-        zoomBoxEl.addEventListener('touchmove', (event) => handleTouchMove(event, { sizeCallback, hintPopup, }));
+        layerImageEl.addEventListener('touchmove', (event) => handleTouchMove(event, { sizeCallback, hintPopup, }));
         // 手势结束
-        zoomBoxEl.addEventListener('touchend', (event) => handleTouchEnd(event));
+        layerImageEl.addEventListener('touchend', (event) => handleTouchEnd(event));
 
-        return zoomBoxEl
+        return layerImageEl
     }
     function handleTouch() {
 
@@ -219,7 +204,7 @@ function previewImage(urlOrImgEl, options = {}) {
 
     // window.onmousewheel = document.onmousewheel = scrollFunc;//IE/Opera/Chrome
     // 
-    function createImg(urlOrImgEl, hasAnimateWhenIsImgEl, { startZoom = 1 }) {
+    function createImgMiddle(urlOrImgEl, hasAnimateWhenIsImgEl, { startZoom = 1 }) {
         // let startZoom = 1;
         const imgEl = document.createElement('img');
 
@@ -297,7 +282,7 @@ function previewImage(urlOrImgEl, options = {}) {
         };
         return imgEl;
     }
-    function createMod(options) {
+    function createLayerAction(options) {
         const { hasCloseBox, hasActionBox } = options
         const modEl = document.createElement('div');
 
