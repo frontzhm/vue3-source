@@ -6,7 +6,7 @@ let startZoom = 1
 //提示的延时
 let hintTime = 300;
 //遮罩颜色
-let bgc = 'rgba(0,0,0,.7)'
+let colorMask = 'rgba(0,0,0,.7)'
 //手机两指是否可以旋转
 let canRotate = false;
 //设置点击遮罩是否关闭
@@ -19,7 +19,7 @@ let hasCloseBox = true;
 
 //几个dom
 //box
-let div;
+let zoomBox;
 //图片
 let img;
 //操作的按钮
@@ -56,34 +56,41 @@ let startZhong; //格式 {x: , y: }
 let imgWidth
 let imgHeight
 
+const options = {
+    scale: 1.0,
+    deg: 0,
+    zoomBox: null,
+    hint: null,
+    img: null,
+    mod: null,
+    isListenWheel: false,
+}
 /**
  * 设置并弹出图片
  * @param data  图片的url 或者 img dom
  * @param follow  传入dom时, 是否有动画效果
  */
-function setData(data, follow = false) {
+function scaleImg(data, follow = false) {
     //缩放的比例
-    scale = 1.0;
+    options.scale = 1.0;
     //旋转的角度
-    deg = 0;
+    options.deg = 0;
     let box = document.getElementById("yyz-img-zoom");
-    if (box) {
-        box.remove();
-    }
-    div = createZoomBox(isClickShadeClose)
-    document.body.appendChild(div);
+    box && box.remove();
+    zoomBox = createZoomBox(isClickShadeClose)
+    document.body.appendChild(zoomBox);
     //要延时一点点时间
     setTimeout(function () {
-        div.style.background = bgc;
+        zoomBox.style.background = colorMask;
     }, 1);
     
     // 比例放大多少的toast
     hint = createHint()
-    div.appendChild(hint);
+    zoomBox.appendChild(hint);
 
     // 中间的图片
     img = createImg(data, follow)
-    div.appendChild(img);
+    zoomBox.appendChild(img);
 
     // 关闭和中间放大缩小旋转 操作层
     mod = createMod()
@@ -94,9 +101,9 @@ function setData(data, follow = false) {
 }
 
 function createZoomBox  (isClickShadeClose = true)  {
-    const div = document.createElement('div'); //1、创建元素
-    div.id = "yyz-img-zoom";   //id
-    div.style.cssText = `
+    const zoomBox = document.createElement('div'); //1、创建元素
+    zoomBox.id = "yyz-img-zoom";   //id
+    zoomBox.style.cssText = `
         width: 100%;
         height: 100vh;
         position: fixed;
@@ -110,17 +117,17 @@ function createZoomBox  (isClickShadeClose = true)  {
         align-items: center;
     `
 
-    isClickShadeClose && div.addEventListener('click', function () {
+    isClickShadeClose && zoomBox.addEventListener('click', function () {
         close();
     });
     //手势开始
-    div.addEventListener('touchstart', (event) => handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }));
+    zoomBox.addEventListener('touchstart', (event) => handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }));
     // 手势移动
-    div.addEventListener('touchmove', (event) => handleTouchMove(event, { getDst, getZhong, getDeg, scale, sizeCallback, hintPopup, img, canRotate, deg }));
+    zoomBox.addEventListener('touchmove', (event) => handleTouchMove(event, { getDst, getZhong, getDeg,  sizeCallback, hintPopup, img, canRotate,  }));
     // 手势结束
-    div.addEventListener('touchend', (event) => handleTouchEnd(event, { startX, startY, startTop, startLeft, img }));
+    zoomBox.addEventListener('touchend', (event) => handleTouchEnd(event, { startX, startY, startTop, startLeft, img }));
     
-    return div
+    return zoomBox
 }
 function createHint  ()  {
     const hint = document.createElement('div'); //1、创建元素
@@ -177,21 +184,21 @@ function createImg(data, follow) {
     //图片加载完毕
     img.onload = function () {
         //判断那一边是长边
-        const isWidthLonger = (img.offsetWidth / img.offsetHeight) > (div.offsetWidth / div.offsetHeight)
+        const isWidthLonger = (img.offsetWidth / img.offsetHeight) > (zoomBox.offsetWidth / zoomBox.offsetHeight)
         const widthLongerCss = `
         transition: all 0.5s;
         height: auto;
         width: ${startZoom * 100}%;
-        left: ${(div.offsetWidth - (div.offsetWidth * startZoom)) / 2}px;
-        top: ${(div.offsetHeight - ((startZoom * div.offsetWidth) * (img.offsetHeight / img.offsetWidth))) / 2}px;
+        left: ${(zoomBox.offsetWidth - (zoomBox.offsetWidth * startZoom)) / 2}px;
+        top: ${(zoomBox.offsetHeight - ((startZoom * zoomBox.offsetWidth) * (img.offsetHeight / img.offsetWidth))) / 2}px;
     `
 
         const heightLongerCss = `
         transition: all 0.5s;
         width: auto;
         height: ${startZoom * 100}%;
-        top: ${(div.offsetHeight - (div.offsetHeight * startZoom)) / 2}px;
-        left: ${(div.offsetWidth - ((div.offsetHeight * startZoom) * (img.offsetWidth / img.offsetHeight))) / 2}px;
+        top: ${(zoomBox.offsetHeight - (zoomBox.offsetHeight * startZoom)) / 2}px;
+        left: ${(zoomBox.offsetWidth - ((zoomBox.offsetHeight * startZoom) * (img.offsetWidth / img.offsetHeight))) / 2}px;
     `
         img.style.cssText += isWidthLonger ? widthLongerCss : heightLongerCss;
 
@@ -318,23 +325,23 @@ let scrollFunc = function (e) {
     }
     console.log(value);
     if (value > 0) {
-        scale += 0.15
+        options.scale += 0.15
     } else {
-        scale -= 0.15
+        options.scale -= 0.15
     }
 
-    if (scale < 0.1) {
-        scale = 0.1
+    if (options.scale < 0.1) {
+        options.scale = 0.1
     }
     //回调
     if (sizeCallback != null) {
-        sizeCallback(scale)
+        sizeCallback(options.scale)
     }
     //弹出提示
-    hintPopup(Math.round(scale * 100) + "%");
+    hintPopup(Math.round(options.scale * 100) + "%");
 
-    let newW = scale * imgWidth;
-    let newH = scale * imgHeight;
+    let newW = options.scale * imgWidth;
+    let newH = options.scale * imgHeight;
 
     //旧的高度
     let oldH = img.offsetHeight;
@@ -365,9 +372,9 @@ window.addEventListener('mousewheel', scrollFunc, {
 function handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst, startTop, startLeft, startZhong, startHeigh, startWidth, startCentreY, startCentreX }) {
     if (event.touches.length >= 2) {
         //计算一下两个触点的初始角度 - 已经旋转的角度
-        startDeg = getDeg(event.touches[0], event.touches[1]) - deg;
+        startDeg = getDeg(event.touches[0], event.touches[1]) - options.deg;
         //计算一下两个触点的初始距离 / 已经缩放比例
-        startDst = getDst(event.touches[0], event.touches[1]) / scale;
+        startDst = getDst(event.touches[0], event.touches[1]) / options.scale;
 
         startTop = img.offsetTop;
         startLeft = img.offsetLeft;
@@ -375,8 +382,8 @@ function handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst,
         startZhong = getZhong(event.touches[0], event.touches[1]);
 
         //开始的宽高
-        startHeigh = scale * imgHeight;
-        startWidth = scale * imgWidth;
+        startHeigh = options.scale * imgHeight;
+        startWidth = options.scale * imgWidth;
 
         //计算两触点 中点 在图片上的比例
         startCentreY = (startZhong.y - startTop) / startHeigh;
@@ -390,21 +397,21 @@ function handleTouchstart(event, { getDeg, getDst, getZhong, startDeg, startDst,
     //阻止浏览器默认行为
     event.preventDefault();
 }
-function handleTouchMove(event, { getDst, getZhong, getDeg, scale, sizeCallback, hintPopup, img, canRotate, deg }) {
+function handleTouchMove(event, { getDst, getZhong, getDeg, sizeCallback, hintPopup, img, canRotate }) {
 
     if (event.touches.length >= 2) {
         // 计算当前两个触点的距离
         let currentDst = getDst(event.touches[0], event.touches[1]);
         let currentZhong = getZhong(event.touches[0], event.touches[1]);
         // 计算当前两个触点的距离 和 两个触点的初始距离 的 比例,最小值是0.1
-        scale = Math.max(currentDst / startDst, 0.1);
+        options.scale = Math.max(currentDst / startDst, 0.1);
         // 回调 
-        sizeCallback && sizeCallback(scale);
+        sizeCallback && sizeCallback(options.scale);
         // 弹出提示
-        hintPopup(Math.round(scale * 100) + "%");
+        hintPopup(Math.round(options.scale * 100) + "%");
 
-        let newW = scale * imgWidth;
-        let newH = scale * imgHeight;
+        let newW = options.scale * imgWidth;
+        let newH = options.scale * imgHeight;
 
         //按照比例进行缩放
         img.style.width = newW + 'px';
@@ -421,9 +428,9 @@ function handleTouchMove(event, { getDst, getZhong, getDeg, scale, sizeCallback,
         //旋转
         if (canRotate) {
             let currentDeg = getDeg(event.touches[0], event.touches[1]);
-            deg = currentDeg - startDeg;
+            options.deg = currentDeg - startDeg;
             // img.style.transformOrigin = startCentreX * 100 +'%, '+startCentreY * 100 +'%';
-            img.style.transform = 'rotate(' + deg + 'deg)';
+            img.style.transform = 'rotate(' + options.deg + 'deg)';
         }
     } else if (event.touches.length == 1) {
         let X = event.touches[0].clientX - startX;
@@ -469,7 +476,7 @@ function setAdd(e) {
     if (e && e.stopPropagation)
         e.stopPropagation();
 
-    scale += 0.2
+        options.scale += 0.2
     upSize();
 }
 /**
@@ -482,7 +489,7 @@ function setSubtract(e) {
     if (e && e.stopPropagation)
         e.stopPropagation();
 
-    scale -= 0.2
+        options.scale -= 0.2
     upSize();
 }
 /**
@@ -494,7 +501,7 @@ function rotateLeft(e) {
     if (e && e.stopPropagation)
         e.stopPropagation();
 
-    deg -= 90;
+    options.deg -= 90;
     upRotate();
 }
 /**
@@ -506,7 +513,7 @@ function rotateRight(e) {
     if (e && e.stopPropagation)
         e.stopPropagation();
 
-    deg += 90;
+    options.deg += 90;
     upRotate();
 }
 
@@ -515,7 +522,7 @@ function rotateRight(e) {
  */
 function upRotate() {
     img.style.transition = "transform 0.3s"
-    img.style.transform = 'rotate(' + deg + 'deg)';
+    img.style.transform = 'rotate(' + options.deg + 'deg)';
     clearTimeout(rotateTimer);
     rotateTimer = setTimeout(function () {
         img.style.transition = ""
@@ -529,25 +536,25 @@ let rotateTimer; //旋转的动画的定时器
  */
 function upSize() {
 
-    if (scale < 0.1) {
-        scale = 0.1
+    if (options.scale < 0.1) {
+        options.scale = 0.1
     }
     //回调
     if (sizeCallback != null) {
-        sizeCallback(scale)
+        sizeCallback(options.scale)
     }
-    hintPopup(Math.round(scale * 100) + "%");
+    hintPopup(Math.round(options.scale * 100) + "%");
 
-    let newW = scale * imgWidth;
-    let newH = scale * imgHeight;
+    let newW = options.scale * imgWidth;
+    let newH = options.scale * imgHeight;
 
     //旧的高度
     let oldH = img.offsetHeight;
     let oldW = img.offsetWidth;
 
     //计算中点在图片上的比例
-    let imgNtop = (div.offsetHeight / 2 - img.offsetTop) / img.offsetHeight;
-    let imgNleft = (div.offsetWidth / 2 - img.offsetLeft) / img.offsetWidth;
+    let imgNtop = (zoomBox.offsetHeight / 2 - img.offsetTop) / img.offsetHeight;
+    let imgNleft = (zoomBox.offsetWidth / 2 - img.offsetLeft) / img.offsetWidth;
 
 
     img.style.transition = "all 0.3s"
@@ -602,7 +609,7 @@ function setBackCallback(call) {
  * 关闭
  */
 function close() {
-    if (div == null) {
+    if (zoomBox == null) {
         return
     }
     if (backCallback != null) {
@@ -613,10 +620,10 @@ function close() {
     mod.parentNode.removeChild(mod);
     // alert()
     // div = document.getElementById("yyz-img-zoom");
-    div.style.transition = "all 0.2s"
-    div.style.opacity = 0;
+    zoomBox.style.transition = "all 0.2s"
+    zoomBox.style.opacity = 0;
     setTimeout(function () {
-        div.parentNode.removeChild(div);
+        zoomBox.parentNode.removeChild(zoomBox);
         // box.remove();
     }, 200);
 }
@@ -625,7 +632,7 @@ function close() {
  * @param {color} color 
  */
 function setBgc(color) {
-    bgc = color;
+    colorMask = color;
 }
 
 /**
@@ -660,7 +667,7 @@ function setHandleIf(bool) {
 
 
 //  export  const scaleImg = {
-//     setData,
+//     scaleImg,
 //     setStartZoom,
 //     setHintTime,
 //     setBgc,
@@ -676,7 +683,7 @@ function setHandleIf(bool) {
 //     rotateRight
 //   }
 const YJIC = {
-    setData,
+    scaleImg,
     setStartZoom,
     setHintTime,
     setBgc,
