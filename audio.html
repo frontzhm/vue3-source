@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div class="box">
+    <img class="img" src="http://user-center-t-1252350207.cos.ap-beijing.myqcloud.com/userAvatar/thumb/small/abba483992cceb8be33ee2bba796c722.png?updateTime=1686895894329"/>
+  </div>
+  <script src="./scaleImg.js"></script>
+  <script>
+    document.querySelector('.img').addEventListener('click', function() {
+      console.log('click')
+      window.YJIC.setData(this.src,false);
+    })
+  </script>
+</body>
+</html>

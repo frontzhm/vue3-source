@@ -48,8 +48,6 @@ obj.name = 'hua changed';
 
 ## 写 watchEffect
 
-先写判断，是不是响应式对象，是不是函数
-
 在`reactivity/src/apiWatch`下：
 
 ```js
