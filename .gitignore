@@ -2,3 +2,5 @@ node_modules
 dist/
 video-imgs/video/*
 video-imgs/*
+0-player/*
+0-videos-notes/*

@@ -1,6 +1,9 @@
 // track的时候，需要拿到effect，所以用下全局变量存放effect
 let activeEffect = null;
 // 建立类，方便存放fn，和运行
+/**
+ * fn是函数，收集属性依赖，scheduler是函数，属性依赖变化的时候，执行
+ */
 export class ReactiveEffect {
   // 是否主动执行
   private active = true
