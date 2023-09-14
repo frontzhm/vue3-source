@@ -97,7 +97,6 @@ export function track(target, key) {
 
 // 属性值变化的时候，让相应的effect执行
 export function trigger(target, key) {
-  console.log('targetMap', targetMap)
   const depsMap = targetMap.get(target);
   if (!depsMap) {
     return;

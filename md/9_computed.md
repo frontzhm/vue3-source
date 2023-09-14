@@ -45,7 +45,7 @@ import {
           return obj.firstName + obj.lastName
         },
         set(newVal){
-          console.log(newVal)
+          console.log('computed里的set',newVal)
         }
       })
       
@@ -117,7 +117,95 @@ export class ComputedRefImpl {
 }
 ```
 
-换回自己的，就可以了！
+换回自己的，试试!
+
+![computed_2](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/computed_2.png)
+
+值变化，可以拿到新的值。但是，会多次执行依赖函数，没有缓存效果。
+
+### 2. 实现缓存效果
+
+用`_dirty`来标识需不需要重新计算，不需要的话直接返回，就不再执行一次effect
+
+默认的时候，`_dirty`为true，执行的时候，设置为false。
+属性变化的时候，将`_dirty`重新为true。
+
+```js
+export class ComputedRefImpl {
+  private _value
+  private effect
+  // dirty是脏的意思，代表是否需要重新计算，true表示需要重新计算
+  private _dirty = true
+  constructor(getter){
+    this.effect = new ReactiveEffect(getter,()=>{
+      // 依赖的属性发生变化的时候，会执行这里。属性变化，表明被污染，需要重新计算
+      if(!this._dirty){
+        this._dirty = true
+      }
+    })
+
+  }
+  get value(){
+    if(this._dirty){
+      this._value = this.effect.run()
+      this._dirty = false
+    }
+    return this._value
+  }
+}
+```
+刷新，试试!
+
+![computed_3](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/computed_3.png)
+
+### 3.处理setter
+
+index.html里设置fullName的值
+
+```js
+fullName.value = '1212'
+console.log(fullName.value)
+```
+
+刷新下，发现报错了!
+![computed_4](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/computed_4.png)
+
+因为类只有`get value`，没有`set value`，加上就好啦啦，注意，这里还需要执行下`computed`的传参`setter`
+
+```js
+export class ComputedRefImpl {
+  // ...
+  constructor(getter,public setter){
+    //...
+  }
+  set value(newVal){
+    this._value = newVal;
+    this.setter(newVal)
+  }
+}
+
+```
+
+刷新下就好了！
+
+![computed_5](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/computed_5.png)
+
+### 4.对setter的监测，收集依赖
+
+但这里引发另外一个问题，`fullName`主动设置值的时候，是没有监测的，举个例子
+
+index.html里effect下fullName的值
+
+```js
+effect(()=>{
+  console.log('fullName变化的时候',fullName.value)
+})
+fullName.value = '1212'
+console.log(fullName.value)
+```
+根本没变化！
+
+
 
 ## 清除上一次的watch
 

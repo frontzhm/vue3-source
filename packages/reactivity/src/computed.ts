@@ -17,12 +17,26 @@ export function computed(getterOrSetterOptions){
 export class ComputedRefImpl {
   private _value
   private effect
-  constructor(getter,setter){
-    this.effect = new ReactiveEffect(getter,()=>{})
+  // dirty是脏的意思，代表是否需要重新计算，true表示需要重新计算
+  private _dirty = true
+  constructor(getter,public setter){
+    this.effect = new ReactiveEffect(getter,()=>{
+      // 依赖的属性发生变化的时候，会执行这里。属性变化，表明被污染，需要重新计算
+      if(!this._dirty){
+        this._dirty = true
+      }
+    })
 
   }
   get value(){
-    this._value = this.effect.run()
+    if(this._dirty){
+      this._value = this.effect.run()
+      this._dirty = false
+    }
     return this._value
+  }
+  set value(newVal){
+    this._value = newVal;
+    this.setter(newVal);
   }
 }
