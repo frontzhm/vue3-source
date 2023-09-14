@@ -205,10 +205,85 @@ console.log(fullName.value)
 ```
 根本没变化！
 
+最核心需要做两个方面：
+1. 读取`fullName`的时候，收集相应`effect`（拿个Set放进去）
+2. `fullName`赋值的时候，将收集的`efffec`挨个执行！
 
+步骤：
+1. 先用`dep`属性，来收集`effect`
+2. `get value`的时候，如果当前有`effect`运行，那么就把这个effect收集到`dep`
+3. `set value`的时候，`dep`容器里`effect`挨个执行
 
-## 清除上一次的watch
+```js
+export class ComputedRefImpl {
+  // computed fullName的话，收集fullName相关的effect
+  public dep:Set<ReactiveEffect> = new Set()
+  get value(){
+    
+    if(this._dirty){
+      this._value = this.effect.run()
+      this._dirty = false
+    }
+    // 读取value的时候，收集effect
+    if(activeEffect && !this.dep.has(activeEffect)){
+      this.dep.add(activeEffect)
+      // effect的dep里面也要收集computed的dep
+      activeEffect.deps.push(this.dep)
+    }
+    return this._value
+  }
+  set value(newVal){
+    this._value = newVal;
+    this.setter(newVal);
+    // 设置value的时候，触发dep的effect挨个执行
+    this.dep.forEach(effect => {
+      if(effect!==activeEffect){
+        effect.scheduler?effect.scheduler():effect.run();
+      }
+    });
+  }
+}
+```
+刷新下，可以啦！
+![computed_6](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/computed_6.png)
 
-有一种需求，某个值发生变化时触发请求，但是新一轮的请求如果迟于上一轮的请求回来，就会出现上一轮的请求覆盖了新一轮的，那么怎么清除上一次的请求呢。
+### 5.优化
+
+effect和computed，收集和触发的逻辑是一致的，代码是尽量避开重复的，所以这里将收集和触发抽离出来。
+
+![computed_7](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/computed_7.png)
+![computed_8](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/computed_8.png)
+
+```ts
+
+/**
+ * dep收集effect
+ */
+export function trackEffects(dep: Set<ReactiveEffect>) {
+  if (activeEffect && !dep.has(activeEffect)) {
+    // 收集effect
+    dep.add(activeEffect)
+    // effect同样收集下dep
+    activeEffect.deps.push(dep)
+  }
+}
+/**
+ * dep执行触发effect
+ */
+export function triggerEffects(dep: Set<ReactiveEffect>) {
+  // 防止死循环，所以这边浅拷贝
+  [...dep].forEach((effect) => {
+    const isRunning = activeEffect === effect
+    if (!isRunning) {
+      effect.scheduler ? effect.scheduler() : effect.run()
+    }
+  });
+}
+
+```
+
+同时调整`computed`和`effect`，刷新下页面，还是没问题滴！
+
+##
 
 

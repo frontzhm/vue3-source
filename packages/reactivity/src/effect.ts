@@ -1,8 +1,9 @@
 // track的时候，需要拿到effect，所以用下全局变量存放effect
-let activeEffect = null;
+export let activeEffect: ReactiveEffect | null = null;
 // 建立类，方便存放fn，和运行
 /**
  * fn是函数，收集属性依赖，scheduler是函数，属性依赖变化的时候，执行
+ * 属性deps是个二维数组，结构是 [[_effect1,_effect2],[_effect3,_effect2],]
  */
 export class ReactiveEffect {
   // 是否主动执行
@@ -70,7 +71,7 @@ export function effect(fn, options) {
 // 本质是找到属性对应的effect，但属性存在于对象里，所以两层映射
 // 响应性对象 和 effect的映射，对象属性和effect的映射
 // targetMap = { obj:{name:[effect],age:[effect]} }
-const targetMap: WeakMap<object, Map<string, Set<ReactiveEffect>>> = new WeakMap();
+export const targetMap: WeakMap<object, Map<string, Set<ReactiveEffect>>> = new WeakMap();
 
 // 让属性 订阅 和自己相关的effect，建立映射关系
 export function track(target, key) {
@@ -85,14 +86,38 @@ export function track(target, key) {
   if (!dep) {
     depsMap.set(key, (dep = new Set()));
   }
+  trackEffects(dep)
   // 这属性track过了
-  if (dep.has(activeEffect)) {
-    return;
+  // if (dep.has(activeEffect)) {
+  //   return;
+  // }
+  // // 核心代码，属性 订阅 effect （本质就是建立映射关系），上面一坨就是判断加初始化
+  // dep.add(activeEffect);
+  // // 新增deps
+  // activeEffect.deps.push(dep);
+}
+
+/**
+ * dep收集effect
+ */
+export function trackEffects(dep: Set<ReactiveEffect>) {
+  if (activeEffect && !dep.has(activeEffect)) {
+    // 收集effect
+    dep.add(activeEffect)
+    // effect同样收集下dep
+    activeEffect.deps.push(dep)
   }
-  // 核心代码，属性 订阅 effect （本质就是建立映射关系），上面一坨就是判断加初始化
-  dep.add(activeEffect);
-  // 新增deps
-  activeEffect.deps.push(dep);
+}
+/**
+ * dep执行触发effect
+ */
+export function triggerEffects(dep: Set<ReactiveEffect>) {
+  [...dep].forEach((effect) => {
+    const isRunning = activeEffect === effect
+    if (!isRunning) {
+      effect.scheduler ? effect.scheduler() : effect.run()
+    }
+  });
 }
 
 // 属性值变化的时候，让相应的effect执行
@@ -105,11 +130,6 @@ export function trigger(target, key) {
   if (!dep) {
     return;
   }
-
-  // 核心代码  属性相应的effect 挨个执行（上面一坨也是一样，判断）
-  // 注意，这里要浅拷贝，不然set删除effect的时候，就死循环了
-  [...dep].forEach((effect) => {
-    // 这里是出现死循环的根本原因，一边遍历dep的effect，一边执行，而执行的时候，又在删除这里的effect，所以死循环
-    activeEffect !== effect && (effect.scheduler ? effect.scheduler() : effect.run());
-  });
+  // 触发执行
+  triggerEffects(dep)
 }

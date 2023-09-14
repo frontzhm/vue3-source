@@ -11,7 +11,7 @@ const __v_isReactive = '__v_isReactive'
 export const isReactive = (param) => param[__v_isReactive];
 
 // 代理对象的映射
-const reactiveMap = new WeakMap()
+export const reactiveMap = new WeakMap()
 
 export function reactive(target) {
   // 如果不是对象，直接返回
