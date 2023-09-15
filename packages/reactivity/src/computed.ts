@@ -15,6 +15,7 @@ export function computed(getterOrSetterOptions) {
 }
 
 export class ComputedRefImpl {
+  public __v_isRef = true
   private _value
   private effect
   // dirty是脏的意思，代表是否需要重新计算，true表示需要重新计算

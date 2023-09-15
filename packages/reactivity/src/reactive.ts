@@ -28,6 +28,11 @@ export function reactive(target) {
   if (target[__v_isReactive]) {
     return target
   }
+  // 如果是ref对象，直接返回value
+  if (target.__v_isRef) {
+    return target.value
+  }
+
   const proxy = new Proxy(target, {
     get(target, key, receiver) {
       // 这里埋点，加上__v_isReactive属性，标识已经代理过了

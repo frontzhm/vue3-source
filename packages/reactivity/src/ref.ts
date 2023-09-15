@@ -1,26 +1,28 @@
-import { ReactiveEffect,trackEffects,triggerEffects } from './effect';
+import { ReactiveEffect, trackEffects, triggerEffects } from './effect';
 
-import {isObject,reactive} from './reactive'
-export function ref(param){
+import { isObject, reactive } from './reactive'
+export function ref(param) {
   return new RefImpl(param)
 }
 
-function toReactive(param){
-  return isObject(param)?reactive(param):param
+function toReactive(param) {
+  return isObject(param) ? reactive(param) : param
 }
 
-export class RefImpl{
+export class RefImpl {
+  // 代表是ref对象
+  public __v_isRef = true
   private _value
   public dep: Set<ReactiveEffect> = new Set()
-  constructor(private rawValue){
+  constructor(private rawValue) {
     this._value = toReactive(rawValue)
   }
-  get value(){
+  get value() {
     trackEffects(this.dep);
     return this._value
   }
-  set value(newVal){
-    if(newVal===this._value){
+  set value(newVal) {
+    if (newVal === this._value) {
       return
     }
     this._value = toReactive(newVal);

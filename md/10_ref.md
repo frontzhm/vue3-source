@@ -116,6 +116,50 @@ export class RefImpl{
 ![ref_2](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/ref_2.png)
 
 
+### 设置__v_isRef
+
+这里有种情况，额外处理下，`index.html`加两句
+
+```js
+const obj2 = reactive({person:obj,age:18})
+console.log('obj2 reactive ref',obj2.person)
+```
+如果按照现在的逻辑，应该是`ref类型`，但引用原vue发现结果是这样
+
+![ref_4](https://blog-huahua.oss-cn-beijing.aliyuncs.com/blog/code/ref_4.png)
+
+也就是reactive对象里，如果key值是对象，且被ref过的话，将直接返回Proxy类型，并不会返回ref类型。
+
+怎么处理呢？
+
+1. ref类用属性`public __v_isRef = true`，标识自己
+2. reactive里get取值时，如果发现`__v_isRef = true`，则返回`xx.value`就可以
+
+```ts
+// ref.ts
+export class RefImpl{
+  public __v_isRef = true
+  // ...
+}
+
+// computed.ts 这边顺手加上
+export class ComputedRefImpl {
+  public __v_isRef = true
+}
+
+// reactive.ts
+export function reactive(target) {
+  // ...
+  if (target[__v_isReactive]) {
+    return target
+  }
+  // 如果是ref对象，直接返回value
+  if (target.__v_isRef) {
+    return target.value
+  }
+}
+```
+然后再换成自己的，就可以返回Proxy值了！
 
 ## ref.ts
 
@@ -132,6 +176,7 @@ function toReactive(param){
 }
 
 export class RefImpl{
+  public __v_isRef = true
   private _value
   public dep: Set<ReactiveEffect> = new Set()
   constructor(private rawValue){
